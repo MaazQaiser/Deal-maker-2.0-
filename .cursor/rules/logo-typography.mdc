@@ -1,0 +1,21 @@
+---
+description: Locked logo typography — never overwrite from Figma
+globs: src/constants/brand.ts,src/components/brand/**
+alwaysApply: false
+---
+
+# Logo Typography (Locked)
+
+The user has finalized logo font sizes. **Never change these values** when syncing from Figma, matching designs, or refactoring the logo.
+
+## Locked values in `src/constants/brand.ts`
+
+- `productFontSize`: **16** (Deal Builder)
+- `taglineFontSize`: **12** (Oakwood showroom finance tool)
+
+## Rules
+
+- Do NOT copy Figma literal font sizes (e.g. 14.769px, 9px) into `brandConfig.figma`
+- Do NOT change `productFontSize` or `taglineFontSize` unless the user explicitly requests new sizes
+- Figma sync may update layout (logo width/height, gaps, colors) but NOT typography sizes
+- If asked to "match Figma pixel-perfect", explain that typography is intentionally overridden for browser readability
