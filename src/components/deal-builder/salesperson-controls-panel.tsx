@@ -153,7 +153,8 @@ export function SalespersonControlsPanel({
           <Button
             type="button"
             variant="ghost"
-            size="icon"
+            size="sm"
+            className="size-8 shrink-0 p-0"
             onClick={onClose}
             aria-label="Close adjust plan"
           >
