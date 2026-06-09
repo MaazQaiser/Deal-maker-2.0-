@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
@@ -14,8 +14,7 @@ import {
 } from "@/lib/validations/deal";
 import {
   branches,
-  currentSalesperson,
-  dealSources,
+  leadSources,
   existingCustomers,
   lookupPartExchange,
   lookupVehicleByRegistration,
@@ -24,6 +23,7 @@ import {
   searchStockVehicles,
   stockVehicles,
 } from "@/constants/deal-mock-data";
+import { pxFinanceCompanies } from "@/constants/px-finance-companies";
 import { routes } from "@/constants/routes";
 import { formatGbp } from "@/lib/formatGbp";
 import { useDealStore } from "@/store/dealStore";
@@ -31,7 +31,9 @@ import type { CustomerRecord, VehicleRecord } from "@/types/deal";
 import { PageContainer } from "@/components/layouts/page-container";
 import { PageHeader } from "@/components/layouts/page-header";
 import { CarBrandLogo } from "@/components/deals/car-brand-logo";
-import { DealStageStepper } from "@/components/deals/deal-stage-stepper";
+import { DealCreationStepper } from "@/components/deals/deal-creation-stepper";
+import { dealCreationSteps } from "@/constants/deal-creation-steps";
+import { dealCreationDefaultValues } from "@/lib/deal-creation-defaults";
 import { FormField } from "@/components/forms/form-field";
 import {
   Card,
@@ -257,7 +259,8 @@ function VehicleDetailsPanel({ vehicle }: { vehicle: VehicleRecord }) {
 
 export function DealCreationScreen() {
   const router = useRouter();
-  const createDeal = useDealStore((s) => s.createDeal);
+  const creationDraft = useDealStore((s) => s.creationDraft);
+  const saveCreationDraft = useDealStore((s) => s.saveCreationDraft);
 
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
@@ -276,36 +279,44 @@ export function DealCreationScreen() {
     control,
     setValue,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<DealCreationFormValues>({
     resolver: zodResolver(dealCreationSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      mobile: "",
-      email: "",
-      address: "",
-      postcode: "",
-      isExistingCustomer: false,
-      vehicleId: "",
-      hasPartExchange: false,
-      pxRegistration: "",
-      pxValuation: undefined,
-      pxOutstandingFinance: undefined,
-      pxSettlementRequired: undefined,
-      salesperson: currentSalesperson.name,
-      branch: "manchester",
-      dealSource: "walk-in",
-      purchaseTimeline: "today",
-      customerBudget: undefined,
-      notes: "",
-    },
+    defaultValues: dealCreationDefaultValues,
   });
+
+  useEffect(() => {
+    if (!creationDraft) return;
+
+    reset(creationDraft);
+
+    if (creationDraft.existingCustomerId) {
+      const customer = existingCustomers.find(
+        (item) => item.id === creationDraft.existingCustomerId,
+      );
+      if (customer) setSelectedCustomer(customer);
+    }
+
+    if (creationDraft.pxRegistration) {
+      setPxRegLookup(creationDraft.pxRegistration);
+      setPxVehicle(lookupPartExchange(creationDraft.pxRegistration));
+    }
+
+    if (creationDraft.vehicleId) {
+      const vehicle = stockVehicles.find(
+        (item) => item.id === creationDraft.vehicleId,
+      );
+      if (vehicle) setRegLookup(vehicle.registration);
+    }
+  }, [creationDraft, reset]);
 
   const vehicleId = watch("vehicleId");
   const hasPartExchange = watch("hasPartExchange");
   const pxValuation = watch("pxValuation");
+  const pxExistingFinance = watch("pxExistingFinance");
   const pxOutstandingFinance = watch("pxOutstandingFinance");
+  const pxSettlementFigure = watch("pxSettlementFigure");
 
   const selectedVehicle = stockVehicles.find((v) => v.id === vehicleId);
   const stockResults = useMemo(
@@ -315,9 +326,10 @@ export function DealCreationScreen() {
 
   const equity = useMemo(() => {
     const val = Number(pxValuation) || 0;
-    const outstanding = Number(pxOutstandingFinance) || 0;
-    return val - outstanding;
-  }, [pxValuation, pxOutstandingFinance]);
+    const settlement =
+      pxExistingFinance === "yes" ? Number(pxSettlementFigure) || 0 : 0;
+    return val - settlement;
+  }, [pxValuation, pxExistingFinance, pxSettlementFigure]);
 
   const handleCustomerSelect = (customer: CustomerRecord) => {
     setSelectedCustomer(customer);
@@ -369,8 +381,10 @@ export function DealCreationScreen() {
       setPxVehicle(px);
       setValue("pxRegistration", px.registration, { shouldValidate: true });
       setValue("pxValuation", 4000);
+      setValue("pxExistingFinance", "yes");
       setValue("pxOutstandingFinance", 1500);
-      setValue("pxSettlementRequired", "yes");
+      setValue("pxSettlementFigure", 1500);
+      setValue("pxFinanceCompany", "santander");
     } else {
       setPxVehicle(null);
       setValue("pxRegistration", pxRegLookup);
@@ -379,12 +393,12 @@ export function DealCreationScreen() {
   };
 
   const onSubmit = async (data: DealCreationFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const deal = createDeal(data);
-    toast.success("Deal saved as draft", {
-      description: `${deal.customer.firstName} ${deal.customer.lastName} · ${deal.vehicle.make} ${deal.vehicle.model}`,
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    saveCreationDraft(data);
+    toast.success("Deal created", {
+      description: "Step 1 saved. Continue to complete deal setup.",
     });
-    router.push(routes.dealBuilder.detail(deal.id));
+    router.push(routes.deals.new.step2);
   };
 
   const onInvalid = (formErrors: FieldErrors<DealCreationFormValues>) => {
@@ -417,16 +431,16 @@ export function DealCreationScreen() {
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6" noValidate>
         <PageHeader
           title="Create New Deal"
-          titleClassName="text-[36px] font-light leading-tight tracking-tight"
-          description="Start a finance deal for a customer"
-          footer={<DealStageStepper currentStage={1} />}
+          titleClassName="text-page-title"
+          description={dealCreationSteps[0].subtitle}
+          footer={<DealCreationStepper currentStep={1} />}
           actions={
             <>
               <Button type="button" variant="outline" asChild>
                 <Link href={routes.dashboard}>Cancel</Link>
               </Button>
               <Button type="submit" loading={isSubmitting}>
-                Continue
+                Create Deal & Continue
               </Button>
             </>
           }
@@ -536,17 +550,47 @@ export function DealCreationScreen() {
                     {...register("address")}
                   />
                 </FormField>
+              </>
+            )}
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              {!selectedCustomer && (
                 <FormField label="Postcode" htmlFor="postcode">
                   <Input
                     id="postcode"
                     placeholder="M20 3JB"
-                    className="max-w-xs"
                     {...register("postcode")}
                   />
                 </FormField>
-              </>
-            )}
+              )}
+
+              <FormField
+                label="Where did customer see the vehicle?"
+                htmlFor="dealSource"
+                error={errors.dealSource?.message}
+                required
+                className={selectedCustomer ? "sm:col-span-2" : undefined}
+              >
+                <Controller
+                  name="dealSource"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="dealSource" error={!!errors.dealSource}>
+                        <SelectValue placeholder="Select where customer saw the vehicle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {leadSources.map((source) => (
+                          <SelectItem key={source.value} value={source.value}>
+                            {source.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </FormField>
+            </div>
           </CardContent>
         </Card>
 
@@ -678,8 +722,11 @@ export function DealCreationScreen() {
                         setPxRegLookup("");
                         setValue("pxRegistration", "");
                         setValue("pxValuation", undefined);
+                        setValue("pxExistingFinance", undefined);
                         setValue("pxOutstandingFinance", undefined);
-                        setValue("pxSettlementRequired", undefined);
+                        setValue("pxSettlementFigure", undefined);
+                        setValue("pxFinanceCompany", undefined);
+                        setValue("pxFinanceEndDate", undefined);
                       }
                     }}
                   />
@@ -688,9 +735,11 @@ export function DealCreationScreen() {
             </div>
 
             {hasPartExchange && (
-              <div className="space-y-6">
+              <div className={cn(dealNestedPanelClass, "space-y-6")}>
+                <p className="text-sm font-medium">Part Exchange Vehicle</p>
+
                 <FormField
-                  label="PX Registration"
+                  label="Registration"
                   htmlFor="pxRegLookup"
                   error={errors.pxRegistration?.message}
                   hint="Example: XY22 ABC"
@@ -718,88 +767,71 @@ export function DealCreationScreen() {
                 </FormField>
 
                 {pxVehicle && (
-                  <div className={dealNestedPanelClass}>
-                    <p className="mb-3 text-sm font-medium">PX Details</p>
-                    <KeyValueList
-                      items={[
-                        { key: "Make", value: pxVehicle.make },
-                        { key: "Model", value: pxVehicle.model },
-                        { key: "Year", value: String(pxVehicle.year) },
-                        {
-                          key: "Mileage",
-                          value: `${pxVehicle.mileage.toLocaleString("en-GB")} miles`,
-                        },
-                      ]}
-                    />
-                  </div>
+                  <KeyValueList
+                    items={[
+                      { key: "Make", value: pxVehicle.make },
+                      { key: "Model", value: pxVehicle.model },
+                      { key: "Year", value: String(pxVehicle.year) },
+                      {
+                        key: "Mileage",
+                        value: `${pxVehicle.mileage.toLocaleString("en-GB")} miles`,
+                      },
+                    ]}
+                  />
                 )}
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    label="PX Valuation"
-                    htmlFor="pxValuation"
-                    error={errors.pxValuation?.message}
-                    required
-                  >
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                        £
-                      </span>
-                      <Input
-                        id="pxValuation"
-                        type="number"
-                        min={0}
-                        className="pl-7"
-                        error={!!errors.pxValuation}
-                        {...register("pxValuation")}
-                      />
-                    </div>
-                  </FormField>
-                  <FormField
-                    label="Outstanding Finance"
-                    htmlFor="pxOutstandingFinance"
-                    error={errors.pxOutstandingFinance?.message}
-                    required
-                  >
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                        £
-                      </span>
-                      <Input
-                        id="pxOutstandingFinance"
-                        type="number"
-                        min={0}
-                        className="pl-7"
-                        error={!!errors.pxOutstandingFinance}
-                        {...register("pxOutstandingFinance")}
-                      />
-                    </div>
-                  </FormField>
-                </div>
+                <FormField
+                  label="Estimated Value"
+                  htmlFor="pxValuation"
+                  error={errors.pxValuation?.message}
+                  required
+                >
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      £
+                    </span>
+                    <Input
+                      id="pxValuation"
+                      type="number"
+                      min={0}
+                      className="pl-7"
+                      error={!!errors.pxValuation}
+                      {...register("pxValuation")}
+                    />
+                  </div>
+                </FormField>
 
                 <FormField
-                  label="Settlement Required"
-                  error={errors.pxSettlementRequired?.message}
+                  label="Existing Finance"
+                  error={errors.pxExistingFinance?.message}
                   required
                 >
                   <Controller
-                    name="pxSettlementRequired"
+                    name="pxExistingFinance"
                     control={control}
                     render={({ field }) => (
                       <RadioGroup
                         value={field.value}
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          if (value === "no") {
+                            setValue("pxFinanceCompany", undefined);
+                            setValue("pxOutstandingFinance", undefined);
+                            setValue("pxSettlementFigure", undefined);
+                            setValue("pxFinanceEndDate", undefined);
+                          }
+                        }}
                         className="flex gap-6"
                       >
                         <div className="flex items-center gap-2">
-                          <RadioGroupItem value="yes" id="settlement-yes" />
-                          <Label htmlFor="settlement-yes" className="font-normal">
+                          <RadioGroupItem value="yes" id="existing-finance-yes" />
+                          <Label htmlFor="existing-finance-yes" className="font-normal">
                             Yes
                           </Label>
                         </div>
                         <div className="flex items-center gap-2">
-                          <RadioGroupItem value="no" id="settlement-no" />
-                          <Label htmlFor="settlement-no" className="font-normal">
+                          <RadioGroupItem value="no" id="existing-finance-no" />
+                          <Label htmlFor="existing-finance-no" className="font-normal">
                             No
                           </Label>
                         </div>
@@ -808,17 +840,111 @@ export function DealCreationScreen() {
                   />
                 </FormField>
 
-                {(pxValuation !== undefined || pxOutstandingFinance !== undefined) && (
-                  <div className={dealNestedPanelClass}>
+                {pxExistingFinance === "yes" && (
+                  <div className="space-y-6 border-t border-border pt-6">
+                    <FormField
+                      label="Finance Company"
+                      error={errors.pxFinanceCompany?.message}
+                      required
+                    >
+                      <Controller
+                        name="pxFinanceCompany"
+                        control={control}
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger
+                              id="pxFinanceCompany"
+                              className={cn(
+                                errors.pxFinanceCompany && "border-danger",
+                              )}
+                            >
+                              <SelectValue placeholder="Select Company" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {pxFinanceCompanies.map((company) => (
+                                <SelectItem key={company.value} value={company.value}>
+                                  {company.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Outstanding Finance"
+                      htmlFor="pxOutstandingFinance"
+                      error={errors.pxOutstandingFinance?.message}
+                      required
+                    >
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          £
+                        </span>
+                        <Input
+                          id="pxOutstandingFinance"
+                          type="number"
+                          min={0}
+                          className="pl-7"
+                          error={!!errors.pxOutstandingFinance}
+                          {...register("pxOutstandingFinance")}
+                        />
+                      </div>
+                    </FormField>
+
+                    <FormField
+                      label="Settlement Figure"
+                      htmlFor="pxSettlementFigure"
+                      error={errors.pxSettlementFigure?.message}
+                      required
+                    >
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          £
+                        </span>
+                        <Input
+                          id="pxSettlementFigure"
+                          type="number"
+                          min={0}
+                          className="pl-7"
+                          error={!!errors.pxSettlementFigure}
+                          {...register("pxSettlementFigure")}
+                        />
+                      </div>
+                    </FormField>
+
+                    <FormField
+                      label="Finance End Date"
+                      htmlFor="pxFinanceEndDate"
+                      error={errors.pxFinanceEndDate?.message}
+                      hint="Optional"
+                    >
+                      <Input
+                        id="pxFinanceEndDate"
+                        type="date"
+                        {...register("pxFinanceEndDate")}
+                      />
+                    </FormField>
+                  </div>
+                )}
+
+                {(pxValuation !== undefined ||
+                  (pxExistingFinance === "yes" && pxSettlementFigure !== undefined)) && (
+                  <div className="rounded-[16px] bg-background/60 p-4">
                     <p className="mb-3 text-sm font-medium">Equity</p>
                     <div className="flex flex-wrap items-center gap-3 text-sm">
                       <span className="font-medium">
                         {formatGbp(Number(pxValuation) || 0)}
                       </span>
-                      <Minus className="size-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        {formatGbp(Number(pxOutstandingFinance) || 0)}
-                      </span>
+                      {pxExistingFinance === "yes" && (
+                        <>
+                          <Minus className="size-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            {formatGbp(Number(pxSettlementFigure) || 0)}
+                          </span>
+                        </>
+                      )}
                       <Equal className="size-4 text-muted-foreground" />
                       <span
                         className={cn(
@@ -857,108 +983,112 @@ export function DealCreationScreen() {
               />
             </FormField>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                label="Branch"
-                htmlFor="branch"
-                error={errors.branch?.message}
-                required
-              >
-                <Controller
-                  name="branch"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="branch" error={!!errors.branch}>
-                        <SelectValue placeholder="Select branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {branches.map((b) => (
-                          <SelectItem key={b.value} value={b.value}>
-                            {b.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </FormField>
+            <FormField
+              label="Branch"
+              htmlFor="branch"
+              error={errors.branch?.message}
+              required
+            >
+              <Controller
+                name="branch"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="branch" error={!!errors.branch}>
+                      <SelectValue placeholder="Select branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.map((b) => (
+                        <SelectItem key={b.value} value={b.value}>
+                          {b.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
 
-              <FormField
-                label="Deal Source"
-                htmlFor="dealSource"
-                error={errors.dealSource?.message}
-                required
-              >
-                <Controller
-                  name="dealSource"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="dealSource" error={!!errors.dealSource}>
-                        <SelectValue placeholder="Select source" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dealSources.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>
-                            {s.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </FormField>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                label="Expected Purchase Timeline"
-                htmlFor="purchaseTimeline"
-                error={errors.purchaseTimeline?.message}
-                required
-              >
-                <Controller
-                  name="purchaseTimeline"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
+            <FormField
+              label="Expected Purchase Timeline"
+              htmlFor="purchaseTimeline"
+              error={errors.purchaseTimeline?.message}
+              required
+            >
+              <Controller
+                name="purchaseTimeline"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger
+                      id="purchaseTimeline"
+                      error={!!errors.purchaseTimeline}
                     >
-                      <SelectTrigger
-                        id="purchaseTimeline"
-                        error={!!errors.purchaseTimeline}
-                      >
-                        <SelectValue placeholder="Select timeline" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {purchaseTimelines.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
-                            {t.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </FormField>
+                      <SelectValue placeholder="Select timeline" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {purchaseTimelines.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+          </CardContent>
+        </Card>
 
+        {/* Section 5 — Customer Budget */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Budget Information</CardTitle>
+            <CardDescription>
+              Critical for HP and PCP finance negotiation
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
-                label="Customer Budget"
-                htmlFor="customerBudget"
-                hint="Optional monthly budget"
+                label="Maximum Deposit"
+                htmlFor="maximumDeposit"
+                error={errors.maximumDeposit?.message}
+                hint="Customer's upper limit for upfront payment"
               >
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
+                    £
+                  </span>
+                  <Input
+                    id="maximumDeposit"
+                    type="number"
+                    min={0}
+                    placeholder="500"
+                    className="h-12 pl-7 text-lg font-semibold"
+                    error={!!errors.maximumDeposit}
+                    {...register("maximumDeposit")}
+                  />
+                </div>
+              </FormField>
+
+              <FormField
+                label="Maximum Monthly Budget"
+                htmlFor="customerBudget"
+                error={errors.customerBudget?.message}
+                hint="Target monthly payment ceiling"
+              >
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
                     £
                   </span>
                   <Input
                     id="customerBudget"
                     type="number"
                     min={0}
-                    placeholder="300"
-                    className="pl-7"
+                    placeholder="350"
+                    className="h-12 pl-7 text-lg font-semibold"
+                    error={!!errors.customerBudget}
                     {...register("customerBudget")}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -968,11 +1098,16 @@ export function DealCreationScreen() {
               </FormField>
             </div>
 
-            <FormField label="Notes" htmlFor="notes">
+            <FormField
+              label="Notes"
+              htmlFor="notes"
+              hint="Preferences, objections, or negotiation context"
+            >
               <Textarea
                 id="notes"
                 placeholder="Interested in lowest monthly payment. Prefers automatic transmission."
-                rows={3}
+                rows={4}
+                className="min-h-[120px] resize-y"
                 {...register("notes")}
               />
             </FormField>

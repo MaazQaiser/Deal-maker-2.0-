@@ -33,13 +33,17 @@ export const dealCreationSchema = z
     hasPartExchange: z.boolean(),
     pxRegistration: z.string().optional(),
     pxValuation: z.coerce.number().optional(),
+    pxExistingFinance: z.enum(["yes", "no"]).optional(),
+    pxFinanceCompany: z.string().optional(),
     pxOutstandingFinance: z.coerce.number().optional(),
-    pxSettlementRequired: z.enum(["yes", "no"]).optional(),
+    pxSettlementFigure: z.coerce.number().optional(),
+    pxFinanceEndDate: z.string().optional(),
 
     salesperson: z.string().min(1, "Salesperson is required"),
     branch: z.string().min(1, "Branch is required"),
-    dealSource: z.string().min(1, "Deal source is required"),
+    dealSource: z.string().min(1, "Select where the customer saw the vehicle"),
     purchaseTimeline: z.string().min(1, "Purchase timeline is required"),
+    maximumDeposit: z.coerce.number().optional(),
     customerBudget: z.coerce.number().optional(),
     notes: z.string().optional(),
   })
@@ -55,26 +59,45 @@ export const dealCreationSchema = z
       if (data.pxValuation === undefined || data.pxValuation < 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Enter a valid part exchange valuation",
+          message: "Enter a valid estimated value",
           path: ["pxValuation"],
         });
       }
-      if (
-        data.pxOutstandingFinance === undefined ||
-        data.pxOutstandingFinance < 0
-      ) {
+      if (!data.pxExistingFinance) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Enter outstanding finance amount",
-          path: ["pxOutstandingFinance"],
+          message: "Select whether existing finance applies",
+          path: ["pxExistingFinance"],
         });
       }
-      if (!data.pxSettlementRequired) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Select whether settlement is required",
-          path: ["pxSettlementRequired"],
-        });
+      if (data.pxExistingFinance === "yes") {
+        if (!data.pxFinanceCompany?.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Finance company is required when existing finance applies",
+            path: ["pxFinanceCompany"],
+          });
+        }
+        if (
+          data.pxOutstandingFinance === undefined ||
+          data.pxOutstandingFinance < 0
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Enter outstanding finance amount",
+            path: ["pxOutstandingFinance"],
+          });
+        }
+        if (
+          data.pxSettlementFigure === undefined ||
+          data.pxSettlementFigure < 0
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Enter settlement figure",
+            path: ["pxSettlementFigure"],
+          });
+        }
       }
     }
   });

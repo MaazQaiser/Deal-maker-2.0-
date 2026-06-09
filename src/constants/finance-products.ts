@@ -84,6 +84,7 @@ export const financeComparisonRows = [
 
 export function suggestFinanceOption(signals: {
   notes?: string;
+  maximumDeposit?: number;
   customerBudget?: number;
   pcpMonthly: number;
 }): FinanceOption {
@@ -92,7 +93,8 @@ export function suggestFinanceOption(signals: {
   if (
     notes.includes("deposit") ||
     notes.includes("own") ||
-    notes.includes("ownership")
+    notes.includes("ownership") ||
+    (signals.maximumDeposit != null && signals.maximumDeposit >= 2000)
   ) {
     return "hp";
   }

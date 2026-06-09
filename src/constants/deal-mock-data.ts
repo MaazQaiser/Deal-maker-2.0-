@@ -17,13 +17,20 @@ export const branches: { value: Branch; label: string }[] = [
   { value: "birmingham", label: "Birmingham" },
 ];
 
-export const dealSources: { value: DealSource; label: string }[] = [
+export const leadSources: { value: DealSource; label: string }[] = [
+  { value: "autotrader", label: "AutoTrader" },
+  { value: "oakwood-website", label: "Oakwood Website" },
   { value: "walk-in", label: "Walk-In" },
-  { value: "phone-enquiry", label: "Phone Enquiry" },
-  { value: "website-lead", label: "Website Lead" },
+  { value: "facebook", label: "Facebook" },
+  { value: "google", label: "Google" },
   { value: "referral", label: "Referral" },
   { value: "returning-customer", label: "Returning Customer" },
+  { value: "other", label: "Other" },
 ];
+
+export function getLeadSourceLabel(value: DealSource | string | undefined): string {
+  return leadSources.find((source) => source.value === value)?.label ?? value ?? "";
+}
 
 export const purchaseTimelines: { value: PurchaseTimeline; label: string }[] = [
   { value: "today", label: "Today" },

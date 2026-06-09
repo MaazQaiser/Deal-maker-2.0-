@@ -1,7 +1,6 @@
 "use client";
 
-import { Check, X } from "lucide-react";
-import { financeProducts } from "@/constants/finance-products";
+import { X } from "lucide-react";
 import { formatGbp } from "@/lib/formatGbp";
 import {
   DEPOSIT_MAX,
@@ -9,27 +8,27 @@ import {
   FinanceOption,
   ZERO_TERM,
   balloonFromGfvPercent,
-  getDealHealthStatus,
   getTermsForFinance,
   gfvPercentFromBalloon,
   type DealFinanceContext,
 } from "@/lib/deal-builder/finance";
-import { KeyValueList } from "@/components/data-display/key-value-list";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Card,
+} from "@/components/data-display/card";
 import { cn } from "@/lib/cn";
-
-const INCLUDED_PRODUCTS = [
-  "Warranty",
-  "Service Plan",
-  "Lifetime MOT",
-  "Supagard",
-] as const;
 
 export type SalespersonControlsPanelProps = {
   onClose?: () => void;
+  embedded?: boolean;
   deposit: number;
   onDepositChange: (value: number) => void;
   pxValue: number;
@@ -42,7 +41,6 @@ export type SalespersonControlsPanelProps = {
   apr: number;
   onAprChange: (value: number) => void;
   selectedFinance: FinanceOption;
-  onSelectFinance: (option: FinanceOption) => void;
   zeroEligible: boolean;
   gfvPercent: number;
   balloonValue: number;
@@ -50,10 +48,6 @@ export type SalespersonControlsPanelProps = {
   onBalloonValueChange: (value: number) => void;
   retailPrice: number;
   financeContext: DealFinanceContext;
-  vehicleCost: number;
-  vehicleMargin: number;
-  pxMargin: number;
-  productMargin: number;
   hasPartExchange: boolean;
 };
 
@@ -100,6 +94,7 @@ function SectionDivider() {
 
 export function SalespersonControlsPanel({
   onClose,
+  embedded = false,
   deposit,
   onDepositChange,
   pxValue,
@@ -112,7 +107,6 @@ export function SalespersonControlsPanel({
   apr,
   onAprChange,
   selectedFinance,
-  onSelectFinance,
   zeroEligible,
   gfvPercent,
   balloonValue,
@@ -120,15 +114,9 @@ export function SalespersonControlsPanel({
   onBalloonValueChange,
   retailPrice,
   financeContext,
-  vehicleCost,
-  vehicleMargin,
-  pxMargin,
-  productMargin,
   hasPartExchange,
 }: SalespersonControlsPanelProps) {
   const availableTerms = getTermsForFinance(selectedFinance);
-  const totalMargin = vehicleMargin + pxMargin + productMargin;
-  const dealHealth = getDealHealthStatus(totalMargin);
 
   const handleBalloonChange = (value: number) => {
     onBalloonValueChange(value);
@@ -140,30 +128,13 @@ export function SalespersonControlsPanel({
     onBalloonValueChange(balloonFromGfvPercent(percent, retailPrice));
   };
 
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
-        <div>
-          <h2 className="text-heading-4">Adjust Plan</h2>
-          <p className="text-caption text-muted-foreground">
-            Finance options update live as you change these values
-          </p>
-        </div>
-        {onClose ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="size-8 shrink-0 p-0"
-            onClick={onClose}
-            aria-label="Close adjust plan"
-          >
-            <X className="size-4" />
-          </Button>
-        ) : null}
-      </div>
-
-      <div className="flex-1 space-y-6 overflow-y-auto py-6 scrollbar-thin">
+  const controlsContent = (
+    <div
+      className={cn(
+        "space-y-6",
+        !embedded && onClose && "flex-1 overflow-y-auto py-6 scrollbar-thin",
+      )}
+    >
         <section className="space-y-4">
           <div>
             <h3 className="text-sm font-medium">Customer deposit</h3>
@@ -332,108 +303,72 @@ export function SalespersonControlsPanel({
         <SectionDivider />
         <section className="space-y-4">
           <div>
-            <h3 className="text-sm font-medium">Finance option</h3>
+            <h3 className="text-sm font-medium">Discounts</h3>
             <p className="text-caption text-muted-foreground">
-              Customer&apos;s preferred outcome
+              Sales codes and manager overrides
             </p>
           </div>
           <div className="space-y-2">
-            {(Object.keys(financeProducts) as FinanceOption[]).map((option) => {
-              const product = financeProducts[option];
-              const disabled = option === "zero" && !zeroEligible;
-
-              return (
-                <label
-                  key={option}
-                  className={cn(
-                    "flex cursor-pointer items-start gap-3 rounded-[16px] border border-border p-3 transition-colors",
-                    selectedFinance === option && "border-primary bg-primary/5",
-                    disabled && "cursor-not-allowed opacity-50",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="finance-option"
-                    className="mt-1 accent-primary"
-                    checked={selectedFinance === option}
-                    disabled={disabled}
-                    onChange={() => onSelectFinance(option)}
-                  />
-                  <div>
-                    <p className="text-sm font-medium">{product.outcome}</p>
-                    <p className="text-caption text-muted-foreground">
-                      {product.headline}
-                    </p>
-                  </div>
-                </label>
-              );
-            })}
+            <Label htmlFor="sales-code">Sales Code</Label>
+            <Input id="sales-code" placeholder="Enter sales code" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="manager-override">Manager Override</Label>
+            <Input
+              id="manager-override"
+              type="number"
+              min={0}
+              step={50}
+              placeholder="Optional discount amount"
+            />
           </div>
         </section>
+    </div>
+  );
 
-        <SectionDivider />
-        <section className="space-y-3">
-          <div>
-            <h3 className="text-sm font-medium">Included products</h3>
-            <p className="text-caption text-muted-foreground">
-              Always included in Phase 1 — read only
-            </p>
-          </div>
-          {INCLUDED_PRODUCTS.map((item) => (
-            <div key={item} className="flex items-center gap-2 text-sm">
-              <Check className="size-4 text-success" />
-              <span>{item}</span>
-            </div>
-          ))}
-          <div className="rounded-[16px] bg-muted/50 p-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Total product value</span>
-              <span className="font-semibold">
-                {formatGbp(financeContext.productValue ?? 1649)}
-              </span>
-            </div>
-          </div>
-        </section>
+  if (embedded) {
+    return (
+      <Card>
+        <Accordion type="single" collapsible defaultValue="configure-deal">
+          <AccordionItem value="configure-deal" className="border-0">
+            <AccordionTrigger className="px-6 py-5 hover:no-underline">
+              <div className="text-left">
+                <h2 className="text-heading-4">Configure Deal</h2>
+                <p className="text-caption font-normal text-muted-foreground">
+                  Finance and discounts — hidden from presentation view
+                </p>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">{controlsContent}</AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </Card>
+    );
+  }
 
-        <SectionDivider />
-        <section className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-medium">Deal health</h3>
-              <p className="text-caption text-muted-foreground">
-                Internal only — customer cannot see
-              </p>
-            </div>
-            <Badge variant="neutral" className="text-[10px] uppercase">
-              Internal
-            </Badge>
-          </div>
-          <KeyValueList
-            items={[
-              { key: "Vehicle cost", value: formatGbp(vehicleCost) },
-              { key: "Vehicle margin", value: formatGbp(vehicleMargin) },
-              { key: "PX margin", value: formatGbp(pxMargin) },
-              { key: "Product margin", value: formatGbp(productMargin) },
-            ]}
-          />
-          <div className="flex items-center justify-between border-t border-border pt-3">
-            <span className="text-sm font-medium">Total margin</span>
-            <span className="text-heading-4">{formatGbp(totalMargin)}</span>
-          </div>
-          <Badge
-            variant={
-              dealHealth.status === "healthy"
-                ? "success"
-                : dealHealth.status === "low"
-                  ? "warning"
-                  : "danger"
-            }
-            className="w-full justify-center py-2"
+  return (
+    <div className={cn("flex flex-col", onClose && "h-full")}>
+      <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
+        <div>
+          <h2 className="text-heading-4">Configure Deal</h2>
+          <p className="text-caption text-muted-foreground">
+            Finance and discounts — hidden from presentation view
+          </p>
+        </div>
+        {onClose ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="size-8 shrink-0 p-0"
+            onClick={onClose}
+            aria-label="Close adjust plan"
           >
-            {dealHealth.label}
-          </Badge>
-        </section>
+            <X className="size-4" />
+          </Button>
+        ) : null}
       </div>
+      {controlsContent}
     </div>
   );
 }

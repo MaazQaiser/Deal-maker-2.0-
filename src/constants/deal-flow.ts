@@ -46,6 +46,16 @@ export const dealFlowSteps: DealFlowStep[] = [
     phase: "wizard",
     order: 3,
     previous: "dashboard",
+    next: "deal-creation-step-2",
+  },
+  {
+    id: "deal-creation-step-2",
+    title: "Deal Details",
+    description: "Complete additional deal information.",
+    path: routes.deals.new.step2,
+    phase: "wizard",
+    order: 4,
+    previous: "new-deal",
     next: "vehicle-lookup",
   },
   {

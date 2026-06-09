@@ -4,7 +4,7 @@ export const dealStatusVariant: Record<
   DealStatus,
   "neutral" | "info" | "success" | "warning" | "danger"
 > = {
-  draft: "neutral",
+  draft: "info",
   presented: "info",
   won: "success",
   lost: "danger",

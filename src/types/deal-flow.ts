@@ -6,6 +6,7 @@ export type DealFlowStepId =
   | "login"
   | "dashboard"
   | "new-deal"
+  | "deal-creation-step-2"
   | "vehicle-lookup"
   | "vehicle-found"
   | "part-exchange"

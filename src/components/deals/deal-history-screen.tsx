@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import type { RecentDeal } from "@/types/dashboard";
 import type { TableColumn } from "@/types";
 import { dealHistoryRecords } from "@/constants/deal-history-mock-data";
@@ -12,6 +13,7 @@ import { dealStatusLabel, dealStatusVariant } from "@/lib/dealStatus";
 import {
   defaultDealHistoryFilters,
   filterDealHistory,
+  hasActiveDealHistoryFilters,
 } from "@/lib/filterDealHistory";
 import { PageContainer } from "@/components/layouts/page-container";
 import { PageHeader } from "@/components/layouts/page-header";
@@ -138,18 +140,31 @@ export function DealHistoryScreen() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <DealHistorySearch
-            filters={filters}
-            onFiltersChange={setFilters}
-          />
-
-          <Separator />
-
-          <DealHistoryFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            salespeople={salespeople}
-          />
+          <div className="flex flex-wrap items-end gap-3">
+            <DealHistorySearch
+              filters={filters}
+              onFiltersChange={setFilters}
+              inline
+            />
+            <DealHistoryFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              salespeople={salespeople}
+              inline
+            />
+            {hasActiveDealHistoryFilters(filters) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mb-0.5 shrink-0"
+                onClick={() => setFilters(defaultDealHistoryFilters)}
+              >
+                <X className="size-4" />
+                Clear filters
+              </Button>
+            )}
+          </div>
 
           <Separator />
 

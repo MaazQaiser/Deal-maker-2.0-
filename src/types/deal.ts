@@ -1,13 +1,18 @@
 import type { DealStatus } from "@/types/dashboard";
+import type { ProcessChecklist } from "@/types/process-checklist";
+import type { TestDriveNotes, TrialCloseData } from "@/types/test-drive";
 
 export type Branch = "manchester" | "leeds" | "birmingham";
 
 export type DealSource =
+  | "autotrader"
+  | "oakwood-website"
   | "walk-in"
-  | "phone-enquiry"
-  | "website-lead"
+  | "facebook"
+  | "google"
   | "referral"
-  | "returning-customer";
+  | "returning-customer"
+  | "other";
 
 export type PurchaseTimeline =
   | "today"
@@ -45,8 +50,11 @@ export type PartExchangeRecord = {
   year: number;
   mileage: number;
   valuation: number;
+  existingFinance: boolean;
   outstandingFinance: number;
-  settlementRequired: boolean;
+  settlementFigure: number;
+  financeCompany?: string;
+  financeEndDate?: string;
   equity: number;
 };
 
@@ -68,6 +76,10 @@ export type DealRecord = {
   branch: Branch;
   dealSource: DealSource;
   purchaseTimeline: PurchaseTimeline;
+  maximumDeposit?: number;
   customerBudget?: number;
   notes?: string;
+  processChecklist?: ProcessChecklist;
+  testDriveNotes?: TestDriveNotes;
+  trialClose?: TrialCloseData;
 };

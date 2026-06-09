@@ -1,27 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  Calendar,
-  Car,
-  Gauge,
-  Palette,
-  Printer,
-  SlidersHorizontal,
-  User,
-} from "lucide-react";
+import { Printer } from "lucide-react";
 import { PX_MARGIN, PRODUCT_MARGIN } from "@/constants/deal-builder";
-import { dealBuilderStages } from "@/constants/deal-stages";
-import {
-  getStockVehicleImage,
-} from "@/constants/deal-mock-data";
 import { financeProducts } from "@/constants/finance-products";
 import { getDemoDeal } from "@/lib/deal-builder/demo-deal";
+import { demoTestDriveNotes } from "@/lib/test-drive-display";
 import { suggestFinanceOption } from "@/constants/finance-products";
-import { formatGbp } from "@/lib/formatGbp";
 import {
   FinanceOption,
   DEFAULT_HP_APR,
@@ -30,29 +16,27 @@ import {
   clampTermForFinance,
   getFinanceSummary,
 } from "@/lib/deal-builder/finance";
+import { usePresentationTimer } from "@/hooks/use-presentation-timer";
 import { useDealStore } from "@/store/dealStore";
+import {
+  DealBuilderHeader,
+  type ViewMode,
+} from "@/components/deal-builder/deal-builder-header";
 import { PageContainer } from "@/components/layouts/page-container";
-import { PageHeader } from "@/components/layouts/page-header";
-import { CarBrandLogo } from "@/components/deals/car-brand-logo";
-import { DealStageStepper } from "@/components/deals/deal-stage-stepper";
+import { DealBuilderVehiclePanel } from "@/components/deal-builder/deal-builder-vehicle-panel";
+import { DealBuilderCustomerPanel } from "@/components/deal-builder/deal-builder-customer-panel";
+import { DealBuilderPartExchangePanel } from "@/components/deal-builder/deal-builder-part-exchange-panel";
 import { FinanceComparisonPanel } from "@/components/deal-builder/finance-comparison-panel";
+import {
+  FinancePresentationScreen,
+  type PresentationPhase,
+} from "@/components/deal-builder/finance-presentation-screen";
+import { PresentationGuidePanel } from "@/components/deal-builder/presentation-guide-panel";
+import { DealHealthPanel } from "@/components/deal-builder/deal-health-panel";
 import { SalespersonControlsPanel } from "@/components/deal-builder/salesperson-controls-panel";
 import { routes } from "@/constants/routes";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/data-display/card";
-import { KeyValueList } from "@/components/data-display/key-value-list";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/cn";
-
-const dealNestedPanelClass = "rounded-[24px] bg-muted/50 p-4";
 
 type DealBuilderWorkspaceProps = {
   dealId: string;
@@ -71,11 +55,13 @@ export function DealBuilderWorkspace({ dealId }: DealBuilderWorkspaceProps) {
       ? notesByDealId[dealId]
       : storedDeal?.notes ?? deal.notes ?? "";
 
-  const [controlsOpen, setControlsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("sales");
+  const [presentationPhase, setPresentationPhase] =
+    useState<PresentationPhase>("zero");
   const [deposit, setDeposit] = useState(4000);
   const [pxValue, setPxValue] = useState(deal.partExchange?.valuation ?? 0);
   const [settlementFigure, setSettlementFigure] = useState(
-    deal.partExchange?.outstandingFinance ?? 0,
+    deal.partExchange?.settlementFigure ?? 0,
   );
   const pxEquity = useMemo(
     () => calculatePxEquity(pxValue, settlementFigure),
@@ -134,43 +120,58 @@ export function DealBuilderWorkspace({ dealId }: DealBuilderWorkspaceProps) {
         },
         financeContext,
       ),
-    [deposit, term, selectedFinance, hpVariant, balloonValue, apr, financeContext],
+    [
+      deposit,
+      term,
+      selectedFinance,
+      hpVariant,
+      balloonValue,
+      apr,
+      financeContext,
+    ],
   );
 
   const effectiveSelected: FinanceOption =
-    selectedFinance === "zero" && !summary.zeroEligible ? "hp" : selectedFinance;
+    selectedFinance === "zero" && !summary.zeroEligible
+      ? "hp"
+      : selectedFinance;
 
-  const stageMeta = dealBuilderStages[1];
-  const vehicleMargin =
-    deal.vehicle.retailPrice - deal.vehicle.vehicleCost;
+  const vehicleMargin = deal.vehicle.retailPrice - deal.vehicle.vehicleCost;
+  const vehicleTitle = `${deal.vehicle.make} ${deal.vehicle.model} ${deal.vehicle.variant} ${deal.vehicle.year}`;
+  const vehicleLabel = `${deal.vehicle.make} ${deal.vehicle.model} ${deal.vehicle.variant}`;
+  const customerName = `${deal.customer.firstName} ${deal.customer.lastName}`;
 
   const suggestedOption = useMemo(
     () =>
       suggestFinanceOption({
         notes,
+        maximumDeposit: deal.maximumDeposit,
         customerBudget: deal.customerBudget,
         pcpMonthly: summary.pcpMonthly,
       }),
-    [notes, deal.customerBudget, summary.pcpMonthly],
+    [notes, deal.maximumDeposit, deal.customerBudget, summary.pcpMonthly],
   );
 
-  const monthlyPayment =
-    effectiveSelected === "zero"
-      ? summary.zeroMonthly
-      : effectiveSelected === "hp"
-        ? summary.hpMonthly
-        : summary.pcpMonthly;
+  const timerScreen =
+    viewMode === "sales"
+      ? effectiveSelected
+      : presentationPhase === "alternatives"
+        ? selectedFinance === "hp" || selectedFinance === "pcp"
+          ? selectedFinance
+          : "hp"
+        : "zero";
 
-  const financeBadgeLabel = `${financeProducts[effectiveSelected].productCode} Selected · ${formatGbp(monthlyPayment)}/mo`;
+  const { formattedTotal: presentationTimer } = usePresentationTimer(timerScreen);
 
   const customerInitials =
     `${deal.customer.firstName[0] ?? ""}${deal.customer.lastName[0] ?? ""}`.toUpperCase();
+  const testDriveNotes = deal.testDriveNotes ?? demoTestDriveNotes;
 
-  const handleContinue = () => {
+  const persistAndContinue = (finance: FinanceOption = effectiveSelected) => {
     saveFinancePlan(dealId, {
       deposit,
       term,
-      selectedFinance: effectiveSelected,
+      selectedFinance: finance,
       hpVariant,
       balloon: balloonValue,
       apr,
@@ -181,267 +182,210 @@ export function DealBuilderWorkspace({ dealId }: DealBuilderWorkspaceProps) {
     router.push(routes.dealBuilder.review(dealId));
   };
 
+  const handleClientAgreedZero = () => {
+    handleSelectFinance("zero");
+    persistAndContinue("zero");
+  };
+
+  const handleClientWantsOtherOptions = () => {
+    setViewMode("presentation");
+    setPresentationPhase("alternatives");
+    if (selectedFinance === "zero") {
+      handleSelectFinance("hp");
+    }
+  };
+
+  const controlsPanelProps = {
+    deposit,
+    onDepositChange: setDeposit,
+    pxValue,
+    onPxValueChange: setPxValue,
+    settlementFigure,
+    onSettlementChange: setSettlementFigure,
+    pxEquity,
+    term,
+    onTermChange: handleTermChange,
+    apr,
+    onAprChange: setApr,
+    selectedFinance,
+    zeroEligible: summary.zeroEligible,
+    gfvPercent,
+    balloonValue,
+    onGfvPercentChange: handleGfvPercentChange,
+    onBalloonValueChange: handleBalloonValueChange,
+    retailPrice: deal.vehicle.retailPrice,
+    financeContext,
+    hasPartExchange: Boolean(deal.partExchange),
+  };
+
   return (
-    <PageContainer size="full" className="space-y-6 py-6 sm:space-y-8">
-      <PageHeader
-        title={stageMeta.title}
-        titleClassName="text-[36px] font-light leading-tight tracking-tight"
-        description={`${stageMeta.subtitle} · ${dealId}`}
-        footer={
-          <div className="space-y-3 pt-1">
-            <DealStageStepper currentStage={2} />
-            <Badge variant="info" className="text-xs">
-              {financeBadgeLabel}
-            </Badge>
-          </div>
-        }
-        actions={
-          <>
-            <Button type="button" variant="outline" asChild>
-              <Link href={routes.deals.new.index} aria-label="Back to create deal">
-                <ArrowLeft className="size-4" />
-              </Link>
-            </Button>
-            <Button type="button" variant="outline" aria-label="Print deal">
-              <Printer className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant={controlsOpen ? "primary" : "outline"}
-              onClick={() => setControlsOpen((open) => !open)}
-            >
-              <SlidersHorizontal className="size-4" />
-              Adjust Plan
-            </Button>
-            <Button type="button" onClick={handleContinue}>
-              Continue With Selected Finance Option
-            </Button>
-          </>
-        }
+    <div className="flex h-[calc(100dvh-var(--topbar-height))] min-h-0 flex-col overflow-hidden">
+      <DealBuilderHeader
+        dealId={dealId}
+        customerName={customerName}
+        vehicleLabel={vehicleLabel}
+        presentationTimer={presentationTimer}
+        viewMode={viewMode}
+        onViewModeChange={(mode) => {
+          setViewMode(mode);
+          if (mode === "presentation") {
+            setPresentationPhase("zero");
+          }
+        }}
       />
 
-      {/* Vehicle + Customer */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
-        <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
-          <div className="flex items-center justify-center self-stretch py-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={getStockVehicleImage(deal.vehicle.make, deal.vehicle.model)}
-              alt={`${deal.vehicle.make} ${deal.vehicle.model} ${deal.vehicle.variant}`}
-              className="h-auto max-h-[130px] w-auto max-w-full object-contain object-center md:max-h-[160px]"
-              decoding="async"
-            />
-          </div>
+      <div className="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
+        <PageContainer
+          size="full"
+          className={cn(
+            "space-y-6 py-6 sm:space-y-8",
+            "lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:py-6",
+          )}
+        >
+          <div className="grid min-h-0 flex-1 grid-cols-12 gap-6 lg:overflow-hidden">
+            <aside
+              className={cn(
+                "col-span-12 space-y-6 lg:col-span-3",
+                "lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-contain lg:pr-1 scrollbar-thin",
+              )}
+            >
+              <DealBuilderVehiclePanel
+                make={deal.vehicle.make}
+                model={deal.vehicle.model}
+                variant={deal.vehicle.variant}
+                registration={deal.vehicle.registration}
+                year={deal.vehicle.year}
+                mileage={deal.vehicle.mileage}
+                colour={deal.vehicle.colour}
+                retailPrice={deal.vehicle.retailPrice}
+                partExchangeValue={deal.partExchange ? pxValue : null}
+                customerBudget={deal.customerBudget ?? null}
+                showInternalMargin={viewMode === "sales"}
+                vehicleMargin={vehicleMargin}
+              />
+              {deal.partExchange ? (
+                <DealBuilderPartExchangePanel
+                  partExchange={deal.partExchange}
+                  pxValue={pxValue}
+                  settlementFigure={settlementFigure}
+                  pxEquity={pxEquity}
+                />
+              ) : null}
+              {viewMode === "sales" ? (
+                <DealHealthPanel
+                  vehicleCost={deal.vehicle.vehicleCost}
+                  vehicleMargin={vehicleMargin}
+                  pxMargin={PX_MARGIN}
+                  productMargin={PRODUCT_MARGIN}
+                />
+              ) : null}
+            </aside>
 
-          <Card className="w-full min-w-[280px] max-w-[360px] justify-self-end md:shrink-0">
-            <CardContent className="space-y-4 p-6">
-              <div className="flex items-center gap-2 text-base font-semibold">
-                <Car className="size-5 text-primary" />
-                Vehicle
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <CarBrandLogo make={deal.vehicle.make} />
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold">
-                      {deal.vehicle.make} {deal.vehicle.model} {deal.vehicle.variant}
-                    </p>
-                    <Badge variant="neutral" className="mt-1 font-mono">
-                      {deal.vehicle.registration}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-                  <span className="inline-flex items-center gap-2">
-                    <Calendar className="size-4 shrink-0 text-primary/70" aria-hidden />
-                    <span>{deal.vehicle.year}</span>
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <Gauge className="size-4 shrink-0 text-primary/70" aria-hidden />
-                    <span>{deal.vehicle.mileage.toLocaleString("en-GB")} miles</span>
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <Palette className="size-4 shrink-0 text-primary/70" aria-hidden />
-                    <span>{deal.vehicle.colour}</span>
-                  </span>
-                </div>
-              </div>
+            <div
+              className={cn(
+                "col-span-12 lg:col-span-9",
+                "lg:min-h-0 lg:overflow-y-auto lg:overscroll-y-contain scrollbar-thin",
+              )}
+            >
+              {viewMode === "presentation" ? (
+              <FinancePresentationScreen
+                deposit={deposit}
+                summary={summary}
+                effectiveSelected={effectiveSelected}
+                selectedFinance={selectedFinance}
+                phase={presentationPhase}
+                onPhaseChange={setPresentationPhase}
+                onSelectFinance={handleSelectFinance}
+                term={term}
+                hpVariant={hpVariant}
+                balloonValue={balloonValue}
+                apr={apr}
+                financeContext={financeContext}
+                onSelectHpVariant={setHpVariant}
+              />
+              ) : (
+                <div className="space-y-6">
+                  <DealBuilderCustomerPanel
+                    dealId={dealId}
+                    customerName={customerName}
+                    customerInitials={customerInitials}
+                    mobile={deal.customer.mobile}
+                    email={deal.customer.email}
+                    maximumDeposit={deal.maximumDeposit}
+                    customerBudget={deal.customerBudget}
+                    testDriveNotes={testDriveNotes}
+                    notes={notes}
+                    onNotesChange={(value) => updateDealNotes(dealId, value)}
+                  />
 
-              <div>
-                <p className="text-caption text-muted-foreground">Retail Price</p>
-                <p className="text-heading-3">{formatGbp(deal.vehicle.retailPrice)}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <PresentationGuidePanel
+                    customerName={customerName}
+                    vehicleTitle={vehicleTitle}
+                    presentationTimer={presentationTimer}
+                  />
 
-        <Card>
-          <CardContent className="space-y-4 p-6">
-            <div className="flex items-center gap-2 text-base font-semibold">
-              <User className="size-5 text-primary" />
-              Customer
-            </div>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-primary">
-                  {customerInitials}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
-                    {deal.customer.firstName} {deal.customer.lastName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{deal.customer.mobile}</p>
-                  {deal.customer.email && (
-                    <p className="truncate text-sm text-muted-foreground">
-                      {deal.customer.email}
-                    </p>
-                  )}
-                </div>
-              </div>
-              {deal.customerBudget != null && (
-                <div className="shrink-0 text-right">
-                  <p className="text-caption text-muted-foreground">Target Monthly Budget</p>
-                  <p className="text-heading-4">{formatGbp(deal.customerBudget)}</p>
+                  <SalespersonControlsPanel
+                    {...controlsPanelProps}
+                    embedded
+                  />
+
+                  <FinanceComparisonPanel
+                    effectiveSelected={effectiveSelected}
+                    onSelectFinance={handleSelectFinance}
+                    deposit={deposit}
+                    term={term}
+                    hpVariant={hpVariant}
+                    balloonValue={balloonValue}
+                    apr={apr}
+                    financeContext={financeContext}
+                    summary={summary}
+                    suggestedOption={suggestedOption}
+                    onSelectHpVariant={setHpVariant}
+                  />
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor={`deal-notes-${dealId}`} className="text-caption text-muted-foreground">
-                Notes
-              </Label>
-              <Textarea
-                id={`deal-notes-${dealId}`}
-                value={notes}
-                onChange={(e) => updateDealNotes(dealId, e.target.value)}
-                placeholder="Add customer notes, preferences, or objections..."
-                className="min-h-[72px] resize-y"
-              />
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </PageContainer>
       </div>
 
-      {/* Finance comparison + adjust plan + part exchange */}
-      <div className="space-y-6">
-        <div
-          className={cn(
-            "flex overflow-hidden",
-            controlsOpen
-              ? "flex-col gap-6 lg:flex-row lg:items-stretch lg:gap-6"
-              : "flex-col",
-          )}
+      <footer className="shrink-0 border-t border-border bg-background">
+        <PageContainer
+          size="full"
+          className="flex flex-wrap items-center justify-end gap-2 py-4"
         >
-          <div
-            className={cn(
-              "min-w-0 transition-all duration-500 ease-in-out motion-reduce:transition-none",
-              controlsOpen ? "w-full lg:flex-[1_1_0%]" : "w-full",
+          <Button type="button" variant="outline" aria-label="Print deal">
+            <Printer className="size-4" />
+            Print
+          </Button>
+          {viewMode === "presentation" &&
+            presentationPhase === "alternatives" && (
+              <Button type="button" onClick={() => persistAndContinue()}>
+                Continue With {financeProducts[effectiveSelected].outcome}
+              </Button>
             )}
-          >
-            <FinanceComparisonPanel
-              effectiveSelected={effectiveSelected}
-              onSelectFinance={handleSelectFinance}
-              deposit={deposit}
-              term={term}
-              hpVariant={hpVariant}
-              balloonValue={balloonValue}
-              apr={apr}
-              financeContext={financeContext}
-              summary={summary}
-              suggestedOption={suggestedOption}
-              onSelectHpVariant={setHpVariant}
-            />
-          </div>
-
-          <div
-            className={cn(
-              "shrink-0 overflow-hidden transition-all duration-500 ease-in-out motion-reduce:transition-none",
-              controlsOpen
-                ? "w-full translate-y-0 opacity-100 lg:w-[min(400px,38%)] lg:translate-x-0 lg:translate-y-0"
-                : "pointer-events-none max-h-0 w-full opacity-0 lg:max-h-none lg:w-0 lg:translate-x-8",
-            )}
-            aria-hidden={!controlsOpen}
-          >
-            <Card className="flex h-full max-h-[min(80vh,920px)] flex-col overflow-hidden p-6">
-              <SalespersonControlsPanel
-                onClose={() => setControlsOpen(false)}
-                deposit={deposit}
-                onDepositChange={setDeposit}
-                pxValue={pxValue}
-                onPxValueChange={setPxValue}
-                settlementFigure={settlementFigure}
-                onSettlementChange={setSettlementFigure}
-                pxEquity={pxEquity}
-                term={term}
-                onTermChange={handleTermChange}
-                apr={apr}
-                onAprChange={setApr}
-                selectedFinance={selectedFinance}
-                onSelectFinance={handleSelectFinance}
-                zeroEligible={summary.zeroEligible}
-                gfvPercent={gfvPercent}
-                balloonValue={balloonValue}
-                onGfvPercentChange={handleGfvPercentChange}
-                onBalloonValueChange={handleBalloonValueChange}
-                retailPrice={deal.vehicle.retailPrice}
-                financeContext={financeContext}
-                vehicleCost={deal.vehicle.vehicleCost}
-                vehicleMargin={vehicleMargin}
-                pxMargin={PX_MARGIN}
-                productMargin={PRODUCT_MARGIN}
-                hasPartExchange={Boolean(deal.partExchange)}
-              />
-            </Card>
-          </div>
-        </div>
-
-        {deal.partExchange && (
-          <div
-            className={cn(
-              "transition-all duration-500 ease-in-out motion-reduce:transition-none",
-              controlsOpen ? "xl:max-w-[62%]" : "w-full",
-            )}
-          >
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base">Part Exchange</CardTitle>
-                <CardDescription>Customer trade-in value</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className={dealNestedPanelClass}>
-                  <p className="text-sm font-medium">
-                    {deal.partExchange.make} {deal.partExchange.model}
-                  </p>
-                  <Badge variant="neutral" className="mt-2 font-mono">
-                    {deal.partExchange.registration}
-                  </Badge>
-                  <KeyValueList
-                    className="mt-4"
-                    items={[
-                      {
-                        key: "PX Value",
-                        value: formatGbp(pxValue),
-                      },
-                      {
-                        key: "Settlement",
-                        value: formatGbp(settlementFigure),
-                      },
-                    ]}
-                  />
-                </div>
-                <div className={cn(dealNestedPanelClass, "space-y-3")}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Available Equity</span>
-                    <span className="text-heading-4 text-success">
-                      {formatGbp(pxEquity)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-
-    </PageContainer>
+          {(viewMode === "sales" ||
+            (viewMode === "presentation" &&
+              presentationPhase !== "alternatives")) && (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClientWantsOtherOptions}
+              >
+                Client wants other options
+              </Button>
+              <Button
+                type="button"
+                onClick={handleClientAgreedZero}
+                disabled={!summary.zeroEligible}
+              >
+                Client agreed on 0% Finance
+              </Button>
+            </>
+          )}
+        </PageContainer>
+      </footer>
+    </div>
   );
 }

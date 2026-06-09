@@ -7,6 +7,8 @@ import {
 import type { FinanceOption } from "@/lib/deal-builder/finance";
 import type { Branch, DealRecord, DealSource, PurchaseTimeline } from "@/types/deal";
 import type { DealStatus } from "@/types/dashboard";
+import type { ProcessChecklist } from "@/types/process-checklist";
+import type { TestDriveNotes, TrialCloseData } from "@/types/test-drive";
 
 export type DealFinancePlan = {
   deposit: number;
@@ -24,8 +26,23 @@ type DealStore = {
   deals: DealRecord[];
   financePlans: Record<string, DealFinancePlan>;
   notesByDealId: Record<string, string>;
+  creationDraft: DealCreationFormValues | null;
+  creationChecklist: ProcessChecklist | null;
+  creationTestDriveNotes: TestDriveNotes | null;
+  creationTrialClose: TrialCloseData | null;
   nextDealNumber: number;
-  createDeal: (form: DealCreationFormValues) => DealRecord;
+  saveCreationDraft: (form: DealCreationFormValues) => void;
+  getCreationDraft: () => DealCreationFormValues | null;
+  saveCreationChecklist: (checklist: ProcessChecklist) => void;
+  saveCreationTestDriveNotes: (notes: TestDriveNotes) => void;
+  saveCreationTrialClose: (data: TrialCloseData) => void;
+  clearCreationDraft: () => void;
+  createDeal: (
+    form: DealCreationFormValues,
+    checklist?: ProcessChecklist,
+    testDriveNotes?: TestDriveNotes,
+    trialClose?: TrialCloseData,
+  ) => DealRecord;
   getDeal: (id: string) => DealRecord | undefined;
   getDealNotes: (id: string, fallback?: string) => string;
   saveFinancePlan: (dealId: string, plan: DealFinancePlan) => void;
@@ -42,9 +59,32 @@ export const useDealStore = create<DealStore>((set, get) => ({
   deals: [],
   financePlans: {},
   notesByDealId: {},
+  creationDraft: null,
+  creationChecklist: null,
+  creationTestDriveNotes: null,
+  creationTrialClose: null,
   nextDealNumber: 1054,
 
-  createDeal: (form) => {
+  saveCreationDraft: (form) => set({ creationDraft: form }),
+
+  getCreationDraft: () => get().creationDraft,
+
+  saveCreationChecklist: (checklist) => set({ creationChecklist: checklist }),
+
+  saveCreationTestDriveNotes: (notes) =>
+    set({ creationTestDriveNotes: notes }),
+
+  saveCreationTrialClose: (data) => set({ creationTrialClose: data }),
+
+  clearCreationDraft: () =>
+    set({
+      creationDraft: null,
+      creationChecklist: null,
+      creationTestDriveNotes: null,
+      creationTrialClose: null,
+    }),
+
+  createDeal: (form, checklist, testDriveNotes, trialClose) => {
     const vehicle = stockVehicles.find((v) => v.id === form.vehicleId);
     if (!vehicle) {
       throw new Error("Selected vehicle not found");
@@ -56,7 +96,13 @@ export const useDealStore = create<DealStore>((set, get) => ({
     if (form.hasPartExchange && form.pxRegistration) {
       const pxVehicle = lookupPartExchange(form.pxRegistration);
       const valuation = form.pxValuation ?? 0;
-      const outstandingFinance = form.pxOutstandingFinance ?? 0;
+      const hasExistingFinance = form.pxExistingFinance === "yes";
+      const outstandingFinance = hasExistingFinance
+        ? (form.pxOutstandingFinance ?? 0)
+        : 0;
+      const settlementFigure = hasExistingFinance
+        ? (form.pxSettlementFigure ?? 0)
+        : 0;
 
       partExchange = {
         registration: pxVehicle?.registration ?? form.pxRegistration,
@@ -65,9 +111,14 @@ export const useDealStore = create<DealStore>((set, get) => ({
         year: pxVehicle?.year ?? 0,
         mileage: pxVehicle?.mileage ?? 0,
         valuation,
+        existingFinance: hasExistingFinance,
         outstandingFinance,
-        settlementRequired: form.pxSettlementRequired === "yes",
-        equity: valuation - outstandingFinance,
+        settlementFigure,
+        financeCompany: hasExistingFinance ? form.pxFinanceCompany : undefined,
+        financeEndDate: hasExistingFinance
+          ? form.pxFinanceEndDate || undefined
+          : undefined,
+        equity: valuation - settlementFigure,
       };
     }
 
@@ -89,13 +140,21 @@ export const useDealStore = create<DealStore>((set, get) => ({
       branch: form.branch as Branch,
       dealSource: form.dealSource as DealSource,
       purchaseTimeline: form.purchaseTimeline as PurchaseTimeline,
+      maximumDeposit: form.maximumDeposit,
       customerBudget: form.customerBudget,
       notes: form.notes || undefined,
+      processChecklist: checklist,
+      testDriveNotes,
+      trialClose,
     };
 
     set((state) => ({
       deals: [deal, ...state.deals],
       nextDealNumber: state.nextDealNumber + 1,
+      creationDraft: null,
+      creationChecklist: null,
+      creationTestDriveNotes: null,
+      creationTrialClose: null,
     }));
 
     return deal;

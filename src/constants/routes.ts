@@ -15,12 +15,16 @@ export const routes = {
     new: "/deal-builder/new",
     detail: (id: string) => `/deal-builder/${id}` as const,
     review: (id: string) => `/deal-builder/${id}/review` as const,
+    signature: (id: string) => `/deal-builder/${id}/signature` as const,
   },
 
   deals: {
     index: "/deals",
     new: {
       index: "/deals/new",
+      step2: "/deals/new/step-2",
+      step3: "/deals/new/step-3",
+      step4: "/deals/new/step-4",
       vehicleLookup: "/deals/new/vehicle-lookup",
       vehicleFound: "/deals/new/vehicle-found",
       partExchange: "/deals/new/part-exchange",
@@ -65,7 +69,19 @@ export const routeMeta: Record<
   },
   [routes.deals.new.index]: {
     title: "Create New Deal",
-    description: "Start a finance deal for a customer.",
+    description: "Share the customer and vehicle details for this deal.",
+  },
+  [routes.deals.new.step2]: {
+    title: "Create New Deal",
+    description: "Complete the on-site process checklist before continuing.",
+  },
+  [routes.deals.new.step3]: {
+    title: "Test Drive Notes",
+    description: "Capture buying motivations during the test drive.",
+  },
+  [routes.deals.new.step4]: {
+    title: "Trial Close",
+    description: "Score the vehicle before presentation.",
   },
   [routes.deals.new.vehicleLookup]: {
     title: "Vehicle Lookup",

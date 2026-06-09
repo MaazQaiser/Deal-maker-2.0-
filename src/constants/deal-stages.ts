@@ -9,8 +9,8 @@ export const dealBuilderStages: DealBuilderStage[] = [
     subtitle: "Customer · Vehicle · Deal details",
   },
   {
-    title: "Compare finance",
-    subtitle: "Select 0%, HP or PCP",
+    title: "Deal Builder",
+    subtitle: "Finance presentation",
   },
   {
     title: "Review & save",

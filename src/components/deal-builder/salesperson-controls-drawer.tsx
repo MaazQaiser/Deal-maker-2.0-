@@ -26,9 +26,9 @@ export function SalespersonControlsDrawer({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent side="right" className="flex w-full max-w-md flex-col">
         <DrawerHeader className="sr-only">
-          <DrawerTitle>Salesperson Controls</DrawerTitle>
+          <DrawerTitle>Configure Deal</DrawerTitle>
           <DrawerDescription>
-            Adjust plan variables — finance options update live for the customer
+            Finance, products, and discounts — hidden from presentation view
           </DrawerDescription>
         </DrawerHeader>
         <div className="flex-1 overflow-hidden px-6 pb-6">

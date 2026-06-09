@@ -83,6 +83,7 @@ export const routeLabels: Record<string, string> = {
 
   [routes.deals.index]: "Deals",
   [routes.deals.new.index]: "New Deal",
+  [routes.deals.new.step2]: "Step 2",
   [routes.deals.new.vehicleLookup]: "Vehicle Lookup",
   [routes.deals.new.vehicleFound]: "Vehicle Found",
   [routes.deals.new.partExchange]: "Part Exchange",
@@ -104,6 +105,7 @@ export const routeLabels: Record<string, string> = {
 /** Segment-level label overrides */
 export const segmentLabels: Record<string, string> = {
   new: "New Deal",
+  "step-2": "Step 2",
   "vehicle-lookup": "Vehicle Lookup",
   "vehicle-found": "Vehicle Found",
   "part-exchange": "Part Exchange",
