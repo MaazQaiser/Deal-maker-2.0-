@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
-import { DealHistoryScreen } from "@/components/deals/deal-history-screen";
-
-export const metadata: Metadata = {
-  title: "Deal History",
-};
+import { redirect } from "next/navigation";
+import { routes } from "@/constants/routes";
 
 export default function DealsIndexPage() {
-  return <DealHistoryScreen />;
+  redirect(routes.dashboard);
 }

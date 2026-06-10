@@ -1,5 +1,3 @@
-import type { FinanceOptionType } from "@/types/deal-flow";
-
 export const routes = {
   auth: {
     login: "/login",
@@ -14,8 +12,14 @@ export const routes = {
     index: "/deal-builder",
     new: "/deal-builder/new",
     detail: (id: string) => `/deal-builder/${id}` as const,
-    review: (id: string) => `/deal-builder/${id}/review` as const,
-    signature: (id: string) => `/deal-builder/${id}/signature` as const,
+    presentation: (id: string) =>
+      `/deal-builder/${id}/presentation` as const,
+    financeFit: (id: string) => `/deal-builder/${id}/finance-fit` as const,
+    complete: (id: string) => `/deal-builder/${id}/complete` as const,
+    /** @deprecated Use complete */
+    review: (id: string) => `/deal-builder/${id}/complete` as const,
+    /** @deprecated Use complete */
+    signature: (id: string) => `/deal-builder/${id}/complete` as const,
   },
 
   deals: {
@@ -25,15 +29,6 @@ export const routes = {
       step2: "/deals/new/step-2",
       step3: "/deals/new/step-3",
       step4: "/deals/new/step-4",
-      vehicleLookup: "/deals/new/vehicle-lookup",
-      vehicleFound: "/deals/new/vehicle-found",
-      partExchange: "/deals/new/part-exchange",
-      products: "/deals/new/products",
-      financeOptions: "/deals/new/finance-options",
-      financeOption: (type: FinanceOptionType) =>
-        `/deals/new/finance-options/${type}` as const,
-      selectFinance: "/deals/new/select-finance",
-      review: "/deals/new/review",
     },
     detail: (id: string) => `/deals/${id}` as const,
     proposal: (id: string) => `/deals/${id}/proposal` as const,
@@ -60,56 +55,28 @@ export const routeMeta: Record<
 > = {
   [routes.dashboard]: {
     title: "Dashboard",
-    description: "Overview of your deal pipeline and activity.",
+    description: "Overview of your deal pipeline, activity, and all deals.",
   },
 
   [routes.deals.index]: {
-    title: "Deal History",
-    description: "View all saved deals and their status.",
+    title: "Dashboard",
+    description: "Redirected to dashboard.",
   },
   [routes.deals.new.index]: {
-    title: "Create New Deal",
-    description: "Share the customer and vehicle details for this deal.",
+    title: "Arrival & intake",
+    description: "Capture customer, part exchange, and vehicle of interest.",
   },
   [routes.deals.new.step2]: {
-    title: "Create New Deal",
-    description: "Complete the on-site process checklist before continuing.",
+    title: "Pre-test-drive checklist",
+    description: "Complete compliance items before the test drive.",
   },
   [routes.deals.new.step3]: {
-    title: "Test Drive Notes",
+    title: "Test drive notes",
     description: "Capture buying motivations during the test drive.",
   },
   [routes.deals.new.step4]: {
-    title: "Trial Close",
+    title: "Trial close",
     description: "Score the vehicle before presentation.",
-  },
-  [routes.deals.new.vehicleLookup]: {
-    title: "Vehicle Lookup",
-    description: "Search for a vehicle by registration or stock number.",
-  },
-  [routes.deals.new.vehicleFound]: {
-    title: "Vehicle Found",
-    description: "Confirm the selected vehicle details.",
-  },
-  [routes.deals.new.partExchange]: {
-    title: "Part Exchange Entry",
-    description: "Enter part exchange vehicle details.",
-  },
-  [routes.deals.new.products]: {
-    title: "Products Included",
-    description: "Select products and add-ons for the deal.",
-  },
-  [routes.deals.new.financeOptions]: {
-    title: "Finance Options Generated",
-    description: "Review generated finance options: 0%, HP, and PCP.",
-  },
-  [routes.deals.new.selectFinance]: {
-    title: "Select Finance Option",
-    description: "Choose the customer's preferred finance option.",
-  },
-  [routes.deals.new.review]: {
-    title: "Review Deal",
-    description: "Review all deal details before saving.",
   },
 
   [routes.dealBuilder.index]: {
@@ -145,19 +112,6 @@ export const routeMeta: Record<
     description: "Manage team members and permissions.",
   },
 };
-
-export function getFinanceOptionMeta(type: FinanceOptionType) {
-  const labels: Record<FinanceOptionType, string> = {
-    "0": "0% Finance",
-    hp: "HP",
-    pcp: "PCP",
-  };
-  return {
-    title: labels[type],
-    description: `View ${labels[type]} finance option details.`,
-    path: routes.deals.new.financeOption(type),
-  };
-}
 
 export function getDealDetailMeta(id: string) {
   return {

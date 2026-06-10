@@ -36,3 +36,12 @@ export function formatRelativeDate(date: Date | string | number): string {
 
   return formatDate(parsedDate, { dateStyle: "short" });
 }
+
+/** Stable en-GB heading date — avoids SSR/client Intl punctuation differences. */
+export function formatTodayHeading(date: Date): string {
+  const weekday = date.toLocaleDateString("en-GB", { weekday: "long" });
+  const day = date.toLocaleDateString("en-GB", { day: "numeric" });
+  const month = date.toLocaleDateString("en-GB", { month: "long" });
+  const year = date.toLocaleDateString("en-GB", { year: "numeric" });
+  return `${weekday} ${day} ${month} ${year}`;
+}

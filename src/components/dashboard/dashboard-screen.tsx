@@ -1,6 +1,6 @@
 import { PageContainer } from "@/components/layouts/page-container";
 import { WelcomeHeader } from "@/components/dashboard/welcome-header";
-import { RecentDealsTable } from "@/components/dashboard/recent-deals-table";
+import { DealsListingSection } from "@/components/deals/deals-listing-section";
 
 export function DashboardScreen() {
   return (
@@ -11,7 +11,7 @@ export function DashboardScreen() {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <PageContainer className="space-y-6 py-6 sm:space-y-8">
-          <RecentDealsTable />
+          <DealsListingSection />
         </PageContainer>
       </div>
     </div>

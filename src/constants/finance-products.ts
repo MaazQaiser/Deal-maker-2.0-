@@ -82,44 +82,6 @@ export const financeComparisonRows = [
   },
 ] as const;
 
-export function suggestFinanceOption(signals: {
-  notes?: string;
-  maximumDeposit?: number;
-  customerBudget?: number;
-  pcpMonthly: number;
-}): FinanceOption {
-  const notes = signals.notes?.toLowerCase() ?? "";
-
-  if (
-    notes.includes("deposit") ||
-    notes.includes("own") ||
-    notes.includes("ownership") ||
-    (signals.maximumDeposit != null && signals.maximumDeposit >= 2000)
-  ) {
-    return "hp";
-  }
-
-  if (
-    notes.includes("monthly") ||
-    notes.includes("payment") ||
-    notes.includes("budget") ||
-    (signals.customerBudget != null &&
-      signals.customerBudget <= signals.pcpMonthly)
-  ) {
-    return "pcp";
-  }
-
-  if (
-    notes.includes("value") ||
-    notes.includes("0%") ||
-    notes.includes("interest")
-  ) {
-    return "zero";
-  }
-
-  return "pcp";
-}
-
 export function getFinanceProductLabel(option: FinanceOption): string {
   return financeProducts[option].outcome;
 }

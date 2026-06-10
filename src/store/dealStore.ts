@@ -5,6 +5,7 @@ import {
   stockVehicles,
 } from "@/constants/deal-mock-data";
 import type { FinanceOption } from "@/lib/deal-builder/finance";
+import type { IncludedProductId } from "@/constants/presentation-content";
 import type { Branch, DealRecord, DealSource, PurchaseTimeline } from "@/types/deal";
 import type { DealStatus } from "@/types/dashboard";
 import type { ProcessChecklist } from "@/types/process-checklist";
@@ -20,6 +21,8 @@ export type DealFinancePlan = {
   pxValue: number;
   settlementFigure: number;
   gfvPercent: number;
+  comfortableMonthly?: number;
+  includedProducts?: IncludedProductId[];
 };
 
 type DealStore = {
@@ -97,8 +100,8 @@ export const useDealStore = create<DealStore>((set, get) => ({
       const pxVehicle = lookupPartExchange(form.pxRegistration);
       const valuation = form.pxValuation ?? 0;
       const hasExistingFinance = form.pxExistingFinance === "yes";
-      const outstandingFinance = hasExistingFinance
-        ? (form.pxOutstandingFinance ?? 0)
+      const monthlyPayment = hasExistingFinance
+        ? (form.pxMonthlyPayment ?? 0)
         : 0;
       const settlementFigure = hasExistingFinance
         ? (form.pxSettlementFigure ?? 0)
@@ -109,16 +112,33 @@ export const useDealStore = create<DealStore>((set, get) => ({
         make: pxVehicle?.make ?? "",
         model: pxVehicle?.model ?? "",
         year: pxVehicle?.year ?? 0,
-        mileage: pxVehicle?.mileage ?? 0,
+        mileage: form.pxCurrentMileage ?? pxVehicle?.mileage ?? 0,
+        colour: pxVehicle?.colour,
+        fuel: pxVehicle?.fuel,
+        motExpires: pxVehicle?.motExpires,
         valuation,
         existingFinance: hasExistingFinance,
-        outstandingFinance,
+        monthlyPayment,
         settlementFigure,
-        financeCompany: hasExistingFinance ? form.pxFinanceCompany : undefined,
-        financeEndDate: hasExistingFinance
-          ? form.pxFinanceEndDate || undefined
+        lender: hasExistingFinance ? form.pxLender : undefined,
+        agreementNumber: hasExistingFinance
+          ? form.pxAgreementNumber
+          : undefined,
+        settlementQuoteDate: hasExistingFinance
+          ? form.pxSettlementQuoteDate || undefined
           : undefined,
         equity: valuation - settlementFigure,
+        serviceHistoryType: form.pxServiceHistoryType,
+        servicedWhere: form.pxServicedWhere,
+        v5InSellersName: form.pxV5InSellersName,
+        keyCount: form.pxKeyCount,
+        insuranceWriteOff: form.pxInsuranceWriteOff,
+        accidentHistory: form.pxAccidentHistory,
+        accidentDescription: form.pxAccidentDescription || undefined,
+        valueDrivers: form.pxValueDrivers,
+        featuresNotes: form.pxFeaturesNotes || undefined,
+        conditionNotes: form.pxConditionNotes || undefined,
+        photoDataUrls: form.pxPhotos,
       };
     }
 
@@ -140,8 +160,6 @@ export const useDealStore = create<DealStore>((set, get) => ({
       branch: form.branch as Branch,
       dealSource: form.dealSource as DealSource,
       purchaseTimeline: form.purchaseTimeline as PurchaseTimeline,
-      maximumDeposit: form.maximumDeposit,
-      customerBudget: form.customerBudget,
       notes: form.notes || undefined,
       processChecklist: checklist,
       testDriveNotes,

@@ -50,7 +50,37 @@ export type IncludedProductId =
   | "warranty"
   | "service-plan"
   | "lifetime-mot"
-  | "supaguard";
+  | "supaguard"
+  | "cosmetic-cover"
+  | "tyre-alloy-cover";
+
+/** Per-product values — sum equals PRODUCT_VALUE (1649) */
+export const INCLUDED_PRODUCT_VALUES: Record<IncludedProductId, number> = {
+  warranty: 450,
+  "service-plan": 450,
+  "lifetime-mot": 150,
+  supaguard: 200,
+  "cosmetic-cover": 150,
+  "tyre-alloy-cover": 249,
+};
+
+export const DEFAULT_INCLUDED_PRODUCTS: IncludedProductId[] = [
+  "warranty",
+  "service-plan",
+  "lifetime-mot",
+  "supaguard",
+  "cosmetic-cover",
+  "tyre-alloy-cover",
+];
+
+export function sumIncludedProductValues(
+  includedProducts: IncludedProductId[],
+): number {
+  return includedProducts.reduce(
+    (sum, id) => sum + INCLUDED_PRODUCT_VALUES[id],
+    0,
+  );
+}
 
 export type IncludedProductMeta = {
   id: IncludedProductId;
@@ -162,6 +192,52 @@ export const INCLUDED_PRODUCT_DETAILS: Record<
       },
     ],
     leafletLabel: "Supaguard Leaflet (PDF)",
+  },
+  "cosmetic-cover": {
+    id: "cosmetic-cover",
+    name: "Cosmetic Cover",
+    tagline: "Repairs for chips, scuffs, and minor damage",
+    talkingPoints: [
+      "Covers cosmetic damage from everyday use",
+      "Professional smart repair network",
+      "Keeps the car looking its best",
+    ],
+    benefits: [
+      "Chip and scratch repair included",
+      "Alloy wheel refurbishment cover",
+      "No claim excess on covered repairs",
+    ],
+    objections: [
+      {
+        objection: "I'll be careful with the car",
+        response:
+          "Most customers are — but kerbs, car parks, and stone chips happen. This removes the cost when they do.",
+      },
+    ],
+    leafletLabel: "Cosmetic Cover Leaflet (PDF)",
+  },
+  "tyre-alloy-cover": {
+    id: "tyre-alloy-cover",
+    name: "Tyre & Alloy Cover",
+    tagline: "Protection for tyres and wheels",
+    talkingPoints: [
+      "Covers accidental tyre and alloy damage",
+      "Replacement or repair without large bills",
+      "Particularly valuable on larger alloy wheels",
+    ],
+    benefits: [
+      "Tyre replacement cover included",
+      "Alloy wheel damage protection",
+      "Nationwide claim support",
+    ],
+    objections: [
+      {
+        objection: "Tyres are cheap to replace",
+        response:
+          "Run-flat and low-profile tyres on modern cars can be £200+ each. This plan covers multiple incidents.",
+      },
+    ],
+    leafletLabel: "Tyre & Alloy Cover Leaflet (PDF)",
   },
 };
 

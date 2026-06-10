@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { dashboardUser } from "@/constants/dashboard-mock-data";
 import { routes } from "@/constants/routes";
-import { formatDate } from "@/lib/formatDate";
+import { formatTodayHeading } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
@@ -21,10 +21,7 @@ type WelcomeHeaderProps = {
 
 export function WelcomeHeader({ className }: WelcomeHeaderProps) {
   const greeting = getGreeting();
-  const today = formatDate(new Date(), {
-    locale: "en-GB",
-    dateStyle: "full",
-  });
+  const today = formatTodayHeading(new Date());
 
   return (
     <div

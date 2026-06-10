@@ -8,6 +8,7 @@ type PageHeaderProps = {
   breadcrumbs?: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  sticky?: boolean;
 };
 
 export function PageHeader({
@@ -18,9 +19,17 @@ export function PageHeader({
   breadcrumbs,
   footer,
   className,
+  sticky = false,
 }: PageHeaderProps) {
   return (
-    <div className={cn("space-y-4 pb-6", className)}>
+    <div
+      className={cn(
+        "space-y-4 pb-6",
+        sticky &&
+          "sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/90 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8",
+        className,
+      )}
+    >
       {breadcrumbs}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">

@@ -5,6 +5,7 @@ import { formatGbp } from "@/lib/formatGbp";
 import {
   DEPOSIT_MAX,
   DEFAULT_HP_APR,
+  FINANCE_FIT_DEPOSIT_MIN,
   FinanceOption,
   ZERO_TERM,
   balloonFromGfvPercent,
@@ -12,6 +13,12 @@ import {
   gfvPercentFromBalloon,
   type DealFinanceContext,
 } from "@/lib/deal-builder/finance";
+import {
+  DEFAULT_INCLUDED_PRODUCTS,
+  INCLUDED_PRODUCT_DETAILS,
+  INCLUDED_PRODUCT_VALUES,
+  type IncludedProductId,
+} from "@/constants/presentation-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,9 +28,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Card,
-} from "@/components/data-display/card";
+import { Card } from "@/components/data-display/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/cn";
 
 export type SalespersonControlsPanelProps = {
@@ -49,6 +55,11 @@ export type SalespersonControlsPanelProps = {
   retailPrice: number;
   financeContext: DealFinanceContext;
   hasPartExchange: boolean;
+  includedProducts?: IncludedProductId[];
+  onToggleProduct?: (productId: IncludedProductId) => void;
+  allAboveBudget?: boolean;
+  comfortableMonthly?: number;
+  cheapestMonthly?: number;
 };
 
 function CurrencyField({
@@ -115,6 +126,11 @@ export function SalespersonControlsPanel({
   retailPrice,
   financeContext,
   hasPartExchange,
+  includedProducts = DEFAULT_INCLUDED_PRODUCTS,
+  onToggleProduct,
+  allAboveBudget = false,
+  comfortableMonthly,
+  cheapestMonthly,
 }: SalespersonControlsPanelProps) {
   const availableTerms = getTermsForFinance(selectedFinance);
 
@@ -135,6 +151,19 @@ export function SalespersonControlsPanel({
         !embedded && onClose && "flex-1 overflow-y-auto py-6 scrollbar-thin",
       )}
     >
+        {allAboveBudget && comfortableMonthly != null && cheapestMonthly != null ? (
+          <div className="rounded-[16px] border border-warning/30 bg-warning/10 p-4">
+            <p className="text-sm font-medium text-warning">
+              Cheapest option is {formatGbp(cheapestMonthly)}/mo — above the
+              customer&apos;s {formatGbp(comfortableMonthly)}/mo budget
+            </p>
+            <p className="mt-1 text-caption text-muted-foreground">
+              Adjust deposit, term, or trade off a product below to bring the
+              monthly payment down.
+            </p>
+          </div>
+        ) : null}
+
         <section className="space-y-4">
           <div>
             <h3 className="text-sm font-medium">Customer deposit</h3>
@@ -150,7 +179,7 @@ export function SalespersonControlsPanel({
           />
           <input
             type="range"
-            min={0}
+            min={FINANCE_FIT_DEPOSIT_MIN}
             max={DEPOSIT_MAX}
             step={250}
             value={deposit}
@@ -159,7 +188,7 @@ export function SalespersonControlsPanel({
             aria-label="Deposit slider"
           />
           <div className="flex justify-between text-caption text-muted-foreground">
-            <span>£0</span>
+            <span>{formatGbp(FINANCE_FIT_DEPOSIT_MIN)}</span>
             <span>{formatGbp(DEPOSIT_MAX)}</span>
           </div>
           {!zeroEligible ? (
@@ -297,6 +326,52 @@ export function SalespersonControlsPanel({
               {formatGbp(retailPrice)} × {gfvPercent}% ={" "}
               {formatGbp(balloonFromGfvPercent(gfvPercent, retailPrice))}
             </p>
+          </div>
+        </section>
+
+        <SectionDivider />
+        <section className="space-y-4">
+          <div>
+            <h3 className="text-sm font-medium">Products in this deal</h3>
+            <p className="text-caption text-muted-foreground">
+              {allAboveBudget
+                ? "Remove products to lower monthly payments"
+                : "Included with the 0% package — toggle to trade off"}
+            </p>
+          </div>
+          <div className="space-y-3">
+            {DEFAULT_INCLUDED_PRODUCTS.map((productId) => {
+              const product = INCLUDED_PRODUCT_DETAILS[productId];
+              const included = includedProducts.includes(productId);
+              const value = INCLUDED_PRODUCT_VALUES[productId];
+              return (
+                <label
+                  key={productId}
+                  className={cn(
+                    "flex cursor-pointer items-start gap-3 rounded-[16px] border p-3 transition-colors",
+                    included
+                      ? "border-border bg-muted/30"
+                      : "border-dashed border-muted-foreground/30 bg-muted/10 opacity-70",
+                  )}
+                >
+                  <Checkbox
+                    checked={included}
+                    onCheckedChange={() => onToggleProduct?.(productId)}
+                    disabled={!onToggleProduct}
+                    aria-label={`Include ${product.name}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{product.name}</p>
+                    <p className="text-caption text-muted-foreground">
+                      {product.tagline}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold text-muted-foreground">
+                    {formatGbp(value)}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </section>
 

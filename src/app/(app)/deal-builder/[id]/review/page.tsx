@@ -1,21 +1,11 @@
-import type { Metadata } from "next";
-import { DealSummaryScreen } from "@/components/deal-builder/deal-summary-screen";
+import { redirect } from "next/navigation";
+import { routes } from "@/constants/routes";
 
-type DealBuilderReviewPageProps = {
+type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export async function generateMetadata({
-  params,
-}: DealBuilderReviewPageProps): Promise<Metadata> {
+export default async function DealReviewRedirectPage({ params }: PageProps) {
   const { id } = await params;
-  return { title: `Deal Summary ${id}` };
-}
-
-export default async function DealBuilderReviewPage({
-  params,
-}: DealBuilderReviewPageProps) {
-  const { id } = await params;
-
-  return <DealSummaryScreen dealId={id} />;
+  redirect(routes.dealBuilder.complete(id));
 }

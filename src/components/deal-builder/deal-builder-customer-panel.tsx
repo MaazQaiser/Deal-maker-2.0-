@@ -1,7 +1,6 @@
 "use client";
 
 import { User } from "lucide-react";
-import { formatGbp } from "@/lib/formatGbp";
 import {
   getBuyingMotiveLabel,
   getImportantFeatureLabel,
@@ -21,8 +20,6 @@ type DealBuilderCustomerPanelProps = {
   customerInitials: string;
   mobile: string;
   email?: string;
-  maximumDeposit: number | null | undefined;
-  customerBudget: number | null | undefined;
   testDriveNotes?: TestDriveNotes;
   notes: string;
   onNotesChange?: (value: string) => void;
@@ -52,8 +49,6 @@ export function DealBuilderCustomerPanel({
   customerInitials,
   mobile,
   email,
-  maximumDeposit,
-  customerBudget,
   testDriveNotes,
   notes,
   onNotesChange,
@@ -85,33 +80,6 @@ export function DealBuilderCustomerPanel({
             {email ? (
               <p className="truncate text-sm text-muted-foreground">{email}</p>
             ) : null}
-          </div>
-        </div>
-
-        <div
-          className={cn(
-            nestedPanelClass,
-            "border border-primary/20 bg-primary/5",
-          )}
-        >
-          <p className="mb-4 text-sm font-semibold">Budget Information</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-caption text-muted-foreground">
-                Maximum Deposit
-              </p>
-              <p className="text-heading-4">
-                {maximumDeposit != null ? formatGbp(maximumDeposit) : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-caption text-muted-foreground">
-                Maximum Monthly Budget
-              </p>
-              <p className="text-heading-4">
-                {customerBudget != null ? formatGbp(customerBudget) : "—"}
-              </p>
-            </div>
           </div>
         </div>
 

@@ -27,7 +27,7 @@ export function DealDetailChecklistSection({
     return (
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="text-base">Process Checklist</CardTitle>
+          <CardTitle className="text-base">Pre-test-drive checklist</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -41,7 +41,7 @@ export function DealDetailChecklistSection({
   return (
     <Card>
       <CardHeader className="pb-4">
-        <CardTitle className="text-base">Process Checklist</CardTitle>
+        <CardTitle className="text-base">Pre-test-drive checklist</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {processChecklistGroups.map((group) => (

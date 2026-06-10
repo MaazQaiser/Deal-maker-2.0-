@@ -1,7 +1,11 @@
 "use client";
 
 import { getStockVehicleImage } from "@/constants/deal-mock-data";
-import { getPxFinanceCompanyLabel } from "@/constants/px-finance-companies";
+import {
+  getPxServiceHistoryLabel,
+  getPxServicedWhereLabel,
+  getPxValueDriverLabel,
+} from "@/constants/part-exchange-options";
 import { formatGbp } from "@/lib/formatGbp";
 import type { PartExchangeRecord } from "@/types/deal";
 import { CarBrandLogo } from "@/components/deals/car-brand-logo";
@@ -16,6 +20,15 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 
 const nestedPanelClass = "rounded-[16px] bg-muted/50 p-4";
+
+function formatDisplayDate(value: string | undefined) {
+  if (!value) return undefined;
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 type DealBuilderPartExchangePanelProps = {
   partExchange: PartExchangeRecord;
@@ -33,6 +46,46 @@ export function DealBuilderPartExchangePanel({
   className,
 }: DealBuilderPartExchangePanelProps) {
   const vehicleName = `${partExchange.make} ${partExchange.model}`;
+
+  const appraisalItems = [
+    ...(partExchange.colour
+      ? [{ key: "Colour", value: partExchange.colour }]
+      : []),
+    ...(partExchange.fuel ? [{ key: "Fuel", value: partExchange.fuel }] : []),
+    ...(partExchange.motExpires
+      ? [{ key: "MOT expires", value: formatDisplayDate(partExchange.motExpires) ?? "" }]
+      : []),
+    { key: "Mileage", value: `${partExchange.mileage.toLocaleString("en-GB")} miles` },
+    ...(partExchange.serviceHistoryType
+      ? [
+          {
+            key: "Service history",
+            value: getPxServiceHistoryLabel(partExchange.serviceHistoryType),
+          },
+        ]
+      : []),
+    ...(partExchange.servicedWhere
+      ? [
+          {
+            key: "Serviced where",
+            value: getPxServicedWhereLabel(partExchange.servicedWhere),
+          },
+        ]
+      : []),
+    ...(partExchange.valueDrivers?.length
+      ? [
+          {
+            key: "Value drivers",
+            value: partExchange.valueDrivers
+              .map((driver) => getPxValueDriverLabel(driver))
+              .join(", "),
+          },
+        ]
+      : []),
+    ...(partExchange.conditionNotes
+      ? [{ key: "Condition notes", value: partExchange.conditionNotes }]
+      : []),
+  ];
 
   return (
     <Card className={cn("overflow-hidden rounded-xl", className)}>
@@ -60,6 +113,12 @@ export function DealBuilderPartExchangePanel({
           </div>
         </div>
 
+        {appraisalItems.length > 0 && (
+          <div className={nestedPanelClass}>
+            <KeyValueList items={appraisalItems} />
+          </div>
+        )}
+
         <div className={nestedPanelClass}>
           <KeyValueList
             items={[
@@ -70,35 +129,36 @@ export function DealBuilderPartExchangePanel({
               ...(partExchange.existingFinance
                 ? [
                     {
-                      key: "Outstanding Finance",
-                      value: formatGbp(partExchange.outstandingFinance),
+                      key: "Monthly Payment",
+                      value: formatGbp(partExchange.monthlyPayment),
                     },
                     {
                       key: "Settlement Figure",
                       value: formatGbp(settlementFigure),
                     },
-                    ...(partExchange.financeCompany
+                    ...(partExchange.lender
                       ? [
                           {
-                            key: "Finance Company",
-                            value:
-                              getPxFinanceCompanyLabel(
-                                partExchange.financeCompany,
-                              ) ?? partExchange.financeCompany,
+                            key: "Lender",
+                            value: partExchange.lender,
                           },
                         ]
                       : []),
-                    ...(partExchange.financeEndDate
+                    ...(partExchange.agreementNumber
                       ? [
                           {
-                            key: "Finance End Date",
-                            value: new Date(
-                              partExchange.financeEndDate,
-                            ).toLocaleDateString("en-GB", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            }),
+                            key: "Agreement Number",
+                            value: partExchange.agreementNumber,
+                          },
+                        ]
+                      : []),
+                    ...(partExchange.settlementQuoteDate
+                      ? [
+                          {
+                            key: "Settlement Quote Date",
+                            value:
+                              formatDisplayDate(partExchange.settlementQuoteDate) ??
+                              partExchange.settlementQuoteDate,
                           },
                         ]
                       : []),

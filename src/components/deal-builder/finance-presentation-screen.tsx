@@ -48,6 +48,8 @@ const PRODUCT_ORDER: IncludedProductId[] = [
   "service-plan",
   "lifetime-mot",
   "supaguard",
+  "cosmetic-cover",
+  "tyre-alloy-cover",
 ];
 
 export function FinancePresentationScreen({
@@ -121,7 +123,7 @@ export function FinancePresentationScreen({
         {/* Included products */}
         <section className="space-y-4">
           <h3 className="text-heading-3">Included with your purchase</h3>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {PRODUCT_ORDER.map((productId) => {
               const product = INCLUDED_PRODUCT_DETAILS[productId];
               return (
@@ -175,7 +177,6 @@ export function FinancePresentationScreen({
               summary={summary}
               onSelectHpVariant={onSelectHpVariant}
               showZeroCard={false}
-              showSuggestedBadges={false}
               heading="Other finance options"
             />
             <div className="flex justify-start">

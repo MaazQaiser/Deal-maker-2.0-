@@ -9,6 +9,9 @@ export const emptyProcessChecklist: ProcessChecklist = {
   teaCoffeeOffered: false,
   customerSeated: false,
   drivingLicenceReceived: false,
+  drivingLicencePhotographed: false,
+  insuranceConfirmed: false,
+  routeBriefed: false,
   pxKeysReceived: false,
   salesManagerIntroductionCompleted: false,
 };
@@ -27,15 +30,21 @@ export const processChecklistGroups: ProcessChecklistGroup[] = [
     id: "pre-test-drive",
     title: "Pre-Test Drive",
     items: [
-      { key: "drivingLicenceReceived", label: "Driving Licence Received" },
+      { key: "drivingLicenceReceived", label: "Driving licence shown" },
+      {
+        key: "drivingLicencePhotographed",
+        label: "Licence photographed",
+      },
+      { key: "insuranceConfirmed", label: "Insurance confirmed" },
+      { key: "routeBriefed", label: "Route briefed" },
       {
         key: "pxKeysReceived",
-        label: "PX Keys Received",
+        label: "PX keys received",
         requiredWhenPartExchange: true,
       },
       {
         key: "salesManagerIntroductionCompleted",
-        label: "Sales Manager Introduction Completed",
+        label: "Sales manager introduction completed",
       },
     ],
   },

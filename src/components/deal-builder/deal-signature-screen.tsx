@@ -72,7 +72,7 @@ export function DealSignatureScreen({ dealId }: DealSignatureScreenProps) {
           </p>
           <div className="mt-6 flex flex-col gap-3">
             <Button type="button" className="w-full" asChild>
-              <Link href={routes.deals.index}>Return To Deal List</Link>
+              <Link href={routes.dashboard}>Return To Dashboard</Link>
             </Button>
             <Button type="button" variant="outline" className="w-full" asChild>
               <Link href={routes.dealBuilder.review(dealId)}>Back To Summary</Link>

@@ -1,4 +1,4 @@
-export type DealFlowPhase = "auth" | "app" | "wizard" | "post-save";
+export type DealFlowPhase = "auth" | "app" | "wizard" | "deal-builder" | "post-save";
 
 export type FinanceOptionType = "0" | "hp" | "pcp";
 
@@ -7,16 +7,12 @@ export type DealFlowStepId =
   | "dashboard"
   | "new-deal"
   | "deal-creation-step-2"
-  | "vehicle-lookup"
-  | "vehicle-found"
-  | "part-exchange"
-  | "products"
-  | "finance-options"
-  | "finance-option-detail"
-  | "select-finance"
-  | "review"
+  | "deal-creation-step-3"
+  | "deal-creation-step-4"
+  | "presentation"
+  | "finance-fit"
+  | "complete"
   | "save-deal"
-  | "print-proposal"
   | "deal-history";
 
 export type DealFlowStep = {

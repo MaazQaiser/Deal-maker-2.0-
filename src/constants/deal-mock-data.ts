@@ -120,18 +120,39 @@ export const stockVehicles: VehicleRecord[] = [
   },
 ];
 
-export const partExchangeVehicles: Record<
-  string,
-  Omit<VehicleRecord, "retailPrice" | "vehicleCost" | "id">
-> = {
+export type PartExchangeLookupRecord = Omit<
+  VehicleRecord,
+  "retailPrice" | "vehicleCost" | "id"
+> & {
+  fuel: string;
+  motExpires: string;
+  finance?: {
+    lender: string;
+    agreementNumber: string;
+    monthlyPayment: number;
+    settlementFigure: number;
+    settlementQuoteDate: string;
+  };
+};
+
+export const partExchangeVehicles: Record<string, PartExchangeLookupRecord> = {
   XY22ABC: {
     make: "Ford",
-    model: "Focus",
-    variant: "Titanium",
+    model: "Focus ST",
+    variant: "ST-3",
     registration: "XY22 ABC",
-    year: 2022,
-    mileage: 32100,
+    year: 2018,
+    mileage: 62400,
     colour: "Magnetic Grey",
+    fuel: "Petrol",
+    motExpires: "2026-09-22",
+    finance: {
+      lender: "Black Horse",
+      agreementNumber: "BH-2178442",
+      monthlyPayment: 245,
+      settlementFigure: 6200,
+      settlementQuoteDate: "2026-05-28",
+    },
   },
   MN19DEF: {
     make: "Vauxhall",
@@ -141,6 +162,15 @@ export const partExchangeVehicles: Record<
     year: 2019,
     mileage: 45800,
     colour: "Summit White",
+    fuel: "Petrol",
+    motExpires: "2026-03-15",
+    finance: {
+      lender: "Close Brothers",
+      agreementNumber: "CB-903112",
+      monthlyPayment: 189,
+      settlementFigure: 4200,
+      settlementQuoteDate: "2026-04-10",
+    },
   },
 };
 
@@ -170,8 +200,8 @@ export function searchStockVehicles(query: string): VehicleRecord[] {
 }
 
 export function lookupPartExchange(
-  registration: string
-): Omit<VehicleRecord, "retailPrice" | "vehicleCost" | "id"> | null {
+  registration: string,
+): PartExchangeLookupRecord | null {
   const normalized = normalizeRegistration(registration);
   return partExchangeVehicles[normalized] ?? null;
 }

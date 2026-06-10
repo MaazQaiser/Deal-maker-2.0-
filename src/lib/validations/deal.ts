@@ -6,6 +6,11 @@ function normalizeUkMobile(value: string): string {
   return value.replace(/[\s\-()]/g, "");
 }
 
+const pxYesNoSchema = z.enum(["yes", "no"]);
+const pxServiceHistorySchema = z.enum(["fsh", "psh", "none"]);
+const pxServicedWhereSchema = z.enum(["main-dealer", "independent", "mixed"]);
+const pxKeyCountSchema = z.enum(["1", "2", "3plus"]);
+
 export const dealCreationSchema = z
   .object({
     firstName: z.string().min(1, "First name is required"),
@@ -16,7 +21,7 @@ export const dealCreationSchema = z
       .transform(normalizeUkMobile)
       .refine(
         (val) => ukMobileRegex.test(val),
-        "Enter a valid UK mobile number"
+        "Enter a valid UK mobile number",
       ),
     email: z
       .string()
@@ -32,72 +37,164 @@ export const dealCreationSchema = z
 
     hasPartExchange: z.boolean(),
     pxRegistration: z.string().optional(),
+    pxCurrentMileage: z.coerce.number().optional(),
+    pxServiceHistoryType: pxServiceHistorySchema.optional(),
+    pxServicedWhere: pxServicedWhereSchema.optional(),
+    pxV5InSellersName: pxYesNoSchema.optional(),
+    pxKeyCount: pxKeyCountSchema.optional(),
+    pxInsuranceWriteOff: pxYesNoSchema.optional(),
+    pxAccidentHistory: pxYesNoSchema.optional(),
+    pxAccidentDescription: z.string().optional(),
+    pxValueDrivers: z.array(z.string()).optional(),
+    pxFeaturesNotes: z.string().optional(),
+    pxConditionNotes: z.string().optional(),
+    pxPhotos: z.array(z.string()).optional(),
     pxValuation: z.coerce.number().optional(),
-    pxExistingFinance: z.enum(["yes", "no"]).optional(),
-    pxFinanceCompany: z.string().optional(),
-    pxOutstandingFinance: z.coerce.number().optional(),
+    pxExistingFinance: pxYesNoSchema.optional(),
+    pxLender: z.string().optional(),
+    pxAgreementNumber: z.string().optional(),
+    pxMonthlyPayment: z.coerce.number().optional(),
     pxSettlementFigure: z.coerce.number().optional(),
-    pxFinanceEndDate: z.string().optional(),
+    pxSettlementQuoteDate: z.string().optional(),
 
     salesperson: z.string().min(1, "Salesperson is required"),
     branch: z.string().min(1, "Branch is required"),
     dealSource: z.string().min(1, "Select where the customer saw the vehicle"),
     purchaseTimeline: z.string().min(1, "Purchase timeline is required"),
-    maximumDeposit: z.coerce.number().optional(),
-    customerBudget: z.coerce.number().optional(),
     notes: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.hasPartExchange) {
-      if (!data.pxRegistration?.trim()) {
+    if (!data.hasPartExchange) return;
+
+    if (!data.pxRegistration?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Part exchange registration is required",
+        path: ["pxRegistration"],
+      });
+    }
+
+    if (data.pxCurrentMileage === undefined || data.pxCurrentMileage < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter current mileage",
+        path: ["pxCurrentMileage"],
+      });
+    }
+
+    if (!data.pxServiceHistoryType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select service history type",
+        path: ["pxServiceHistoryType"],
+      });
+    }
+
+    if (!data.pxServicedWhere) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select where the vehicle was serviced",
+        path: ["pxServicedWhere"],
+      });
+    }
+
+    if (!data.pxV5InSellersName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select whether the V5 is in the seller's name",
+        path: ["pxV5InSellersName"],
+      });
+    }
+
+    if (!data.pxKeyCount) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select number of keys",
+        path: ["pxKeyCount"],
+      });
+    }
+
+    if (!data.pxInsuranceWriteOff) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select whether the vehicle has an insurance write-off",
+        path: ["pxInsuranceWriteOff"],
+      });
+    }
+
+    if (!data.pxAccidentHistory) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select whether the vehicle has accident history",
+        path: ["pxAccidentHistory"],
+      });
+    }
+
+    if (
+      data.pxAccidentHistory === "yes" &&
+      !data.pxAccidentDescription?.trim()
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter a brief accident description",
+        path: ["pxAccidentDescription"],
+      });
+    }
+
+    if (data.pxValuation === undefined || data.pxValuation < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter a valid estimated value",
+        path: ["pxValuation"],
+      });
+    }
+
+    if (!data.pxExistingFinance) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select whether existing finance applies",
+        path: ["pxExistingFinance"],
+      });
+    }
+
+    if (data.pxExistingFinance === "yes") {
+      if (!data.pxLender?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Part exchange registration is required",
-          path: ["pxRegistration"],
+          message: "Lender is required when existing finance applies",
+          path: ["pxLender"],
         });
       }
-      if (data.pxValuation === undefined || data.pxValuation < 0) {
+      if (!data.pxAgreementNumber?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Enter a valid estimated value",
-          path: ["pxValuation"],
+          message: "Agreement number is required when existing finance applies",
+          path: ["pxAgreementNumber"],
         });
       }
-      if (!data.pxExistingFinance) {
+      if (data.pxMonthlyPayment === undefined || data.pxMonthlyPayment < 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Select whether existing finance applies",
-          path: ["pxExistingFinance"],
+          message: "Enter current monthly payment",
+          path: ["pxMonthlyPayment"],
         });
       }
-      if (data.pxExistingFinance === "yes") {
-        if (!data.pxFinanceCompany?.trim()) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Finance company is required when existing finance applies",
-            path: ["pxFinanceCompany"],
-          });
-        }
-        if (
-          data.pxOutstandingFinance === undefined ||
-          data.pxOutstandingFinance < 0
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Enter outstanding finance amount",
-            path: ["pxOutstandingFinance"],
-          });
-        }
-        if (
-          data.pxSettlementFigure === undefined ||
-          data.pxSettlementFigure < 0
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Enter settlement figure",
-            path: ["pxSettlementFigure"],
-          });
-        }
+      if (
+        data.pxSettlementFigure === undefined ||
+        data.pxSettlementFigure < 0
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Enter settlement figure",
+          path: ["pxSettlementFigure"],
+        });
+      }
+      if (!data.pxSettlementQuoteDate?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Enter settlement quote date",
+          path: ["pxSettlementQuoteDate"],
+        });
       }
     }
   });

@@ -16,6 +16,7 @@ import type { ProcessChecklist, ProcessChecklistKey } from "@/types/process-chec
 import { PageContainer } from "@/components/layouts/page-container";
 import { PageHeader } from "@/components/layouts/page-header";
 import { DealCreationStepper } from "@/components/deals/deal-creation-stepper";
+import { SceneSetterCard } from "@/components/deals/scene-setter-card";
 import {
   Card,
   CardContent,
@@ -79,7 +80,8 @@ export function DealCreationStep2Screen() {
   return (
     <PageContainer size="md" className="space-y-6 py-6 sm:space-y-8">
       <PageHeader
-        title="Create New Deal"
+        sticky
+        title="Pre-test-drive checklist"
         titleClassName="text-page-title"
         description={stepMeta.subtitle}
         footer={<DealCreationStepper currentStep={2} />}
@@ -99,9 +101,11 @@ export function DealCreationStep2Screen() {
         }
       />
 
+      <SceneSetterCard scene="checklist" />
+
       <Card>
         <CardHeader>
-          <CardTitle>Process Checklist</CardTitle>
+          <CardTitle>Pre-test-drive checklist</CardTitle>
           <CardDescription>
             Complete every item before continuing to the test drive
           </CardDescription>

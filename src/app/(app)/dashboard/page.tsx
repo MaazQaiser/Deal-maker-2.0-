@@ -3,7 +3,7 @@ import { DashboardScreen } from "@/components/dashboard/dashboard-screen";
 
 export const metadata: Metadata = {
   title: "Dashboard",
-  description: "Dealership activity overview",
+  description: "Dealership activity and deal pipeline",
 };
 
 export default function DashboardPage() {

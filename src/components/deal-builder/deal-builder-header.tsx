@@ -3,22 +3,23 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { routes } from "@/constants/routes";
 
 export type ViewMode = "sales" | "presentation";
 
 type DealBuilderHeaderProps = {
-  dealId: string;
   customerName: string;
   vehicleLabel: string;
-  presentationTimer: string;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
+  presentationTimer?: string;
+  title?: string;
+  backHref?: string;
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  showViewToggle?: boolean;
 };
 
 const viewModeLabels: Record<ViewMode, string> = {
   sales: "Sales View",
-  presentation: "Presentation View",
+  presentation: "Customer View",
 };
 
 function ViewModeBadge({
@@ -44,35 +45,51 @@ function ViewModeBadge({
 }
 
 export function DealBuilderHeader({
-  dealId,
   customerName,
   vehicleLabel,
   presentationTimer,
+  title = "Deal Builder",
+  backHref,
   viewMode,
   onViewModeChange,
+  showViewToggle = false,
 }: DealBuilderHeaderProps) {
   return (
     <header className="flex h-[72px] shrink-0 items-center gap-4 border-b border-border bg-background px-4 sm:px-6">
-      <Button type="button" variant="ghost" size="sm" className="size-9 shrink-0 p-0" asChild>
-        <Link href={routes.deals.new.index} aria-label="Back">
-          <ArrowLeft className="size-4" />
-        </Link>
-      </Button>
+      {backHref ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="size-9 shrink-0 p-0"
+          asChild
+        >
+          <Link href={backHref} aria-label="Back">
+            <ArrowLeft className="size-4" />
+          </Link>
+        </Button>
+      ) : (
+        <div className="size-9 shrink-0" />
+      )}
 
       <div className="min-w-0 flex-1">
-        <h1 className="text-lg font-semibold leading-tight">Deal Builder</h1>
+        <h1 className="text-lg font-semibold leading-tight">{title}</h1>
         <p className="text-caption">
-          Deal #{dealId} · {customerName} · {vehicleLabel}
+          {customerName} · {vehicleLabel}
         </p>
       </div>
 
       <div className="flex shrink-0 items-center gap-4">
-        <div className="text-right">
-          <p className="text-caption">Presentation Time</p>
-          <p className="font-mono text-sm font-medium">{presentationTimer}</p>
-        </div>
+        {presentationTimer ? (
+          <div className="text-right">
+            <p className="text-caption">Presentation Time</p>
+            <p className="font-mono text-sm font-medium">{presentationTimer}</p>
+          </div>
+        ) : null}
 
-        <ViewModeBadge viewMode={viewMode} onViewModeChange={onViewModeChange} />
+        {showViewToggle && viewMode && onViewModeChange ? (
+          <ViewModeBadge viewMode={viewMode} onViewModeChange={onViewModeChange} />
+        ) : null}
       </div>
     </header>
   );

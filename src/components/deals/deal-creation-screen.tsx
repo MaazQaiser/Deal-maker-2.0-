@@ -23,7 +23,11 @@ import {
   searchStockVehicles,
   stockVehicles,
 } from "@/constants/deal-mock-data";
-import { pxFinanceCompanies } from "@/constants/px-finance-companies";
+import {
+  pxKeyCountOptions,
+  pxServiceHistoryTypes,
+  pxServicedWhereOptions,
+} from "@/constants/part-exchange-options";
 import { routes } from "@/constants/routes";
 import { formatGbp } from "@/lib/formatGbp";
 import { useDealStore } from "@/store/dealStore";
@@ -32,6 +36,7 @@ import { PageContainer } from "@/components/layouts/page-container";
 import { PageHeader } from "@/components/layouts/page-header";
 import { CarBrandLogo } from "@/components/deals/car-brand-logo";
 import { DealCreationStepper } from "@/components/deals/deal-creation-stepper";
+import { SceneSetterCard } from "@/components/deals/scene-setter-card";
 import { dealCreationSteps } from "@/constants/deal-creation-steps";
 import { dealCreationDefaultValues } from "@/lib/deal-creation-defaults";
 import { FormField } from "@/components/forms/form-field";
@@ -58,16 +63,66 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio";
+import { PxRegistrationPlateField } from "@/components/deals/part-exchange/px-registration-plate-field";
+import {
+  PxValueDriversGrid,
+  PxValueDriversGridLegend,
+} from "@/components/deals/part-exchange/px-value-drivers-grid";
+import { PxPhotoUpload } from "@/components/deals/part-exchange/px-photo-upload";
 import { cn } from "@/lib/cn";
 
 const dealPanelClass = "rounded-[24px] bg-card shadow-sm";
 const dealNestedPanelClass = "rounded-[24px] bg-muted/50 p-4";
+const pxOptionRowClass = "flex flex-row flex-wrap items-center gap-x-6 gap-y-2";
 
 function InternalBadge() {
   return (
     <Badge variant="neutral" className="text-[10px] uppercase tracking-wide">
       Internal Only
     </Badge>
+  );
+}
+
+function formatMotExpiry(isoDate: string) {
+  return new Date(isoDate).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+type YesNoValue = "yes" | "no";
+
+function YesNoRadioGroup({
+  value,
+  onChange,
+  yesId,
+  noId,
+}: {
+  value?: YesNoValue;
+  onChange: (value: YesNoValue) => void;
+  yesId: string;
+  noId: string;
+}) {
+  return (
+    <RadioGroup
+      value={value}
+      onValueChange={(next) => onChange(next as YesNoValue)}
+      className={pxOptionRowClass}
+    >
+      <div className="flex items-center gap-2">
+        <RadioGroupItem value="yes" id={yesId} />
+        <Label htmlFor={yesId} className="font-normal">
+          Yes
+        </Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <RadioGroupItem value="no" id={noId} />
+        <Label htmlFor={noId} className="font-normal">
+          No
+        </Label>
+      </div>
+    </RadioGroup>
   );
 }
 
@@ -273,6 +328,7 @@ export function DealCreationScreen() {
     ReturnType<typeof lookupPartExchange>
   >(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [pxLookupError, setPxLookupError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -315,8 +371,8 @@ export function DealCreationScreen() {
   const hasPartExchange = watch("hasPartExchange");
   const pxValuation = watch("pxValuation");
   const pxExistingFinance = watch("pxExistingFinance");
-  const pxOutstandingFinance = watch("pxOutstandingFinance");
   const pxSettlementFigure = watch("pxSettlementFigure");
+  const pxAccidentHistory = watch("pxAccidentHistory");
 
   const selectedVehicle = stockVehicles.find((v) => v.id === vehicleId);
   const stockResults = useMemo(
@@ -376,20 +432,52 @@ export function DealCreationScreen() {
   };
 
   const handlePxLookup = () => {
+    setPxLookupError(null);
     const px = lookupPartExchange(pxRegLookup);
     if (px) {
       setPxVehicle(px);
       setValue("pxRegistration", px.registration, { shouldValidate: true });
+      setValue("pxCurrentMileage", px.mileage);
       setValue("pxValuation", 4000);
-      setValue("pxExistingFinance", "yes");
-      setValue("pxOutstandingFinance", 1500);
-      setValue("pxSettlementFigure", 1500);
-      setValue("pxFinanceCompany", "santander");
+      if (px.finance) {
+        setValue("pxExistingFinance", "yes");
+        setValue("pxLender", px.finance.lender);
+        setValue("pxAgreementNumber", px.finance.agreementNumber);
+        setValue("pxMonthlyPayment", px.finance.monthlyPayment);
+        setValue("pxSettlementFigure", px.finance.settlementFigure);
+        setValue("pxSettlementQuoteDate", px.finance.settlementQuoteDate);
+      }
     } else {
       setPxVehicle(null);
       setValue("pxRegistration", pxRegLookup);
-      setLookupError("No part exchange vehicle found for that registration");
+      setPxLookupError("No part exchange vehicle found for that registration");
     }
+  };
+
+  const clearPartExchangeFields = () => {
+    setPxVehicle(null);
+    setPxRegLookup("");
+    setPxLookupError(null);
+    setValue("pxRegistration", "");
+    setValue("pxCurrentMileage", undefined);
+    setValue("pxServiceHistoryType", undefined);
+    setValue("pxServicedWhere", undefined);
+    setValue("pxV5InSellersName", undefined);
+    setValue("pxKeyCount", undefined);
+    setValue("pxInsuranceWriteOff", undefined);
+    setValue("pxAccidentHistory", undefined);
+    setValue("pxAccidentDescription", "");
+    setValue("pxValueDrivers", []);
+    setValue("pxFeaturesNotes", "");
+    setValue("pxConditionNotes", "");
+    setValue("pxPhotos", []);
+    setValue("pxValuation", undefined);
+    setValue("pxExistingFinance", undefined);
+    setValue("pxLender", undefined);
+    setValue("pxAgreementNumber", undefined);
+    setValue("pxMonthlyPayment", undefined);
+    setValue("pxSettlementFigure", undefined);
+    setValue("pxSettlementQuoteDate", undefined);
   };
 
   const onSubmit = async (data: DealCreationFormValues) => {
@@ -430,7 +518,8 @@ export function DealCreationScreen() {
     <PageContainer size="md" className="space-y-6 py-6 sm:space-y-8">
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6" noValidate>
         <PageHeader
-          title="Create New Deal"
+          sticky
+          title="Arrival & intake"
           titleClassName="text-page-title"
           description={dealCreationSteps[0].subtitle}
           footer={<DealCreationStepper currentStep={1} />}
@@ -440,11 +529,12 @@ export function DealCreationScreen() {
                 <Link href={routes.dashboard}>Cancel</Link>
               </Button>
               <Button type="submit" loading={isSubmitting}>
-                Create Deal & Continue
+                Continue
               </Button>
             </>
           }
         />
+        <SceneSetterCard scene="arrival" />
         {/* Section 1 — Customer Information */}
         <Card>
           <CardHeader>
@@ -697,7 +787,7 @@ export function DealCreationScreen() {
             <div
               className={cn(
                 dealNestedPanelClass,
-                "flex items-center justify-between"
+                "flex items-center justify-between",
               )}
             >
               <div>
@@ -717,17 +807,7 @@ export function DealCreationScreen() {
                     checked={field.value}
                     onCheckedChange={(checked) => {
                       field.onChange(checked);
-                      if (!checked) {
-                        setPxVehicle(null);
-                        setPxRegLookup("");
-                        setValue("pxRegistration", "");
-                        setValue("pxValuation", undefined);
-                        setValue("pxExistingFinance", undefined);
-                        setValue("pxOutstandingFinance", undefined);
-                        setValue("pxSettlementFigure", undefined);
-                        setValue("pxFinanceCompany", undefined);
-                        setValue("pxFinanceEndDate", undefined);
-                      }
+                      if (!checked) clearPartExchangeFields();
                     }}
                   />
                 )}
@@ -736,34 +816,23 @@ export function DealCreationScreen() {
 
             {hasPartExchange && (
               <div className={cn(dealNestedPanelClass, "space-y-6")}>
-                <p className="text-sm font-medium">Part Exchange Vehicle</p>
-
                 <FormField
                   label="Registration"
                   htmlFor="pxRegLookup"
-                  error={errors.pxRegistration?.message}
-                  hint="Example: XY22 ABC"
+                  error={errors.pxRegistration?.message ?? pxLookupError ?? undefined}
+                  hint="Try XY22 ABC or MN19 DEF to test lookup"
                   required
                 >
-                  <div className="flex gap-2">
-                    <Input
-                      id="pxRegLookup"
-                      placeholder="XY22 ABC"
-                      value={pxRegLookup}
-                      onChange={(e) => setPxRegLookup(e.target.value)}
-                      error={!!errors.pxRegistration}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && (e.preventDefault(), handlePxLookup())
-                      }
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handlePxLookup}
-                    >
-                      Lookup
-                    </Button>
-                  </div>
+                  <PxRegistrationPlateField
+                    value={pxRegLookup}
+                    onChange={setPxRegLookup}
+                    onLookup={handlePxLookup}
+                    error={!!errors.pxRegistration}
+                    onKeyDown={(event) =>
+                      event.key === "Enter" &&
+                      (event.preventDefault(), handlePxLookup())
+                    }
+                  />
                 </FormField>
 
                 {pxVehicle && (
@@ -772,12 +841,368 @@ export function DealCreationScreen() {
                       { key: "Make", value: pxVehicle.make },
                       { key: "Model", value: pxVehicle.model },
                       { key: "Year", value: String(pxVehicle.year) },
+                      { key: "Colour", value: pxVehicle.colour },
+                      { key: "Fuel", value: pxVehicle.fuel },
                       {
-                        key: "Mileage",
-                        value: `${pxVehicle.mileage.toLocaleString("en-GB")} miles`,
+                        key: "MOT expires",
+                        value: formatMotExpiry(pxVehicle.motExpires),
                       },
                     ]}
                   />
+                )}
+
+                <FormField
+                  label="Current mileage"
+                  htmlFor="pxCurrentMileage"
+                  error={errors.pxCurrentMileage?.message}
+                  required
+                >
+                  <Input
+                    id="pxCurrentMileage"
+                    type="number"
+                    min={0}
+                    error={!!errors.pxCurrentMileage}
+                    {...register("pxCurrentMileage")}
+                  />
+                </FormField>
+
+                <div className="divide-y divide-border border-t border-border">
+                  <FormField
+                    label="History type"
+                    className="py-6"
+                    error={errors.pxServiceHistoryType?.message}
+                    required
+                  >
+                    <Controller
+                      name="pxServiceHistoryType"
+                      control={control}
+                      render={({ field }) => (
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className={pxOptionRowClass}
+                        >
+                          {pxServiceHistoryTypes.map((option) => (
+                            <div key={option.value} className="flex items-center gap-2">
+                              <RadioGroupItem
+                                value={option.value}
+                                id={`px-service-${option.value}`}
+                              />
+                              <Label
+                                htmlFor={`px-service-${option.value}`}
+                                className="font-normal"
+                              >
+                                {option.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      )}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Serviced where"
+                    className="py-6"
+                    error={errors.pxServicedWhere?.message}
+                    required
+                  >
+                    <Controller
+                      name="pxServicedWhere"
+                      control={control}
+                      render={({ field }) => (
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className={pxOptionRowClass}
+                        >
+                          {pxServicedWhereOptions.map((option) => (
+                            <div key={option.value} className="flex items-center gap-2">
+                              <RadioGroupItem
+                                value={option.value}
+                                id={`px-serviced-${option.value}`}
+                              />
+                              <Label
+                                htmlFor={`px-serviced-${option.value}`}
+                                className="font-normal"
+                              >
+                                {option.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      )}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="V5 in seller's name"
+                    className="py-6"
+                    error={errors.pxV5InSellersName?.message}
+                    required
+                  >
+                    <Controller
+                      name="pxV5InSellersName"
+                      control={control}
+                      render={({ field }) => (
+                        <YesNoRadioGroup
+                          value={field.value}
+                          onChange={field.onChange}
+                          yesId="px-v5-yes"
+                          noId="px-v5-no"
+                        />
+                      )}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Number of keys"
+                    className="py-6"
+                    error={errors.pxKeyCount?.message}
+                    required
+                  >
+                    <Controller
+                      name="pxKeyCount"
+                      control={control}
+                      render={({ field }) => (
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className={pxOptionRowClass}
+                        >
+                          {pxKeyCountOptions.map((option) => (
+                            <div key={option.value} className="flex items-center gap-2">
+                              <RadioGroupItem
+                                value={option.value}
+                                id={`px-keys-${option.value}`}
+                              />
+                              <Label
+                                htmlFor={`px-keys-${option.value}`}
+                                className="font-normal"
+                              >
+                                {option.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      )}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Insurance write-off"
+                    className="py-6"
+                    error={errors.pxInsuranceWriteOff?.message}
+                    required
+                  >
+                    <Controller
+                      name="pxInsuranceWriteOff"
+                      control={control}
+                      render={({ field }) => (
+                        <YesNoRadioGroup
+                          value={field.value}
+                          onChange={field.onChange}
+                          yesId="px-writeoff-yes"
+                          noId="px-writeoff-no"
+                        />
+                      )}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Has the car ever been in an accident?"
+                    className="py-6"
+                    error={errors.pxAccidentHistory?.message}
+                    required
+                  >
+                    <Controller
+                      name="pxAccidentHistory"
+                      control={control}
+                      render={({ field }) => (
+                        <YesNoRadioGroup
+                          value={field.value}
+                          onChange={field.onChange}
+                          yesId="px-accident-yes"
+                          noId="px-accident-no"
+                        />
+                      )}
+                    />
+                  </FormField>
+                </div>
+
+                {pxAccidentHistory === "yes" && (
+                  <FormField
+                    label="If yes — brief description"
+                    htmlFor="pxAccidentDescription"
+                    error={errors.pxAccidentDescription?.message}
+                  >
+                    <Input
+                      id="pxAccidentDescription"
+                      placeholder="Brief description of the accident"
+                      error={!!errors.pxAccidentDescription}
+                      {...register("pxAccidentDescription")}
+                    />
+                  </FormField>
+                )}
+
+                <div className="space-y-3">
+                  <PxValueDriversGridLegend />
+                  <Controller
+                    name="pxValueDrivers"
+                    control={control}
+                    render={({ field }) => (
+                      <PxValueDriversGrid
+                        value={field.value ?? []}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                <FormField label="Anything else worth noting?" htmlFor="pxFeaturesNotes">
+                  <Input
+                    id="pxFeaturesNotes"
+                    placeholder="e.g. recent set of new tyres, upgraded sound system"
+                    {...register("pxFeaturesNotes")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Anything I should know about?"
+                  htmlFor="pxConditionNotes"
+                  hint="Scratches, dents, warning lights, mechanical issues"
+                >
+                  <Textarea
+                    id="pxConditionNotes"
+                    placeholder="e.g. small dent on passenger door, alloy kerb on rear left"
+                    rows={4}
+                    {...register("pxConditionNotes")}
+                  />
+                </FormField>
+
+                <Controller
+                  name="pxPhotos"
+                  control={control}
+                  render={({ field }) => (
+                    <PxPhotoUpload value={field.value ?? []} onChange={field.onChange} />
+                  )}
+                />
+
+                <FormField
+                  label="Existing Finance"
+                  error={errors.pxExistingFinance?.message}
+                  required
+                >
+                  <Controller
+                    name="pxExistingFinance"
+                    control={control}
+                    render={({ field }) => (
+                      <YesNoRadioGroup
+                        value={field.value}
+                        onChange={(value) => {
+                          field.onChange(value);
+                          if (value === "no") {
+                            setValue("pxLender", undefined);
+                            setValue("pxAgreementNumber", undefined);
+                            setValue("pxMonthlyPayment", undefined);
+                            setValue("pxSettlementFigure", undefined);
+                            setValue("pxSettlementQuoteDate", undefined);
+                          }
+                        }}
+                        yesId="existing-finance-yes"
+                        noId="existing-finance-no"
+                      />
+                    )}
+                  />
+                </FormField>
+
+                {pxExistingFinance === "yes" && (
+                  <div className="space-y-6 border-t border-border pt-6">
+                    <FormField
+                      label="Lender"
+                      htmlFor="pxLender"
+                      error={errors.pxLender?.message}
+                      required
+                    >
+                      <Input
+                        id="pxLender"
+                        placeholder="e.g. Black Horse"
+                        error={!!errors.pxLender}
+                        {...register("pxLender")}
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Agreement number"
+                      htmlFor="pxAgreementNumber"
+                      error={errors.pxAgreementNumber?.message}
+                      required
+                    >
+                      <Input
+                        id="pxAgreementNumber"
+                        placeholder="e.g. BH-2178442"
+                        error={!!errors.pxAgreementNumber}
+                        {...register("pxAgreementNumber")}
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Current monthly payment"
+                      htmlFor="pxMonthlyPayment"
+                      error={errors.pxMonthlyPayment?.message}
+                      required
+                    >
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          £
+                        </span>
+                        <Input
+                          id="pxMonthlyPayment"
+                          type="number"
+                          min={0}
+                          className="pl-7"
+                          error={!!errors.pxMonthlyPayment}
+                          {...register("pxMonthlyPayment")}
+                        />
+                      </div>
+                    </FormField>
+
+                    <FormField
+                      label="Settlement figure"
+                      htmlFor="pxSettlementFigure"
+                      error={errors.pxSettlementFigure?.message}
+                      required
+                    >
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          £
+                        </span>
+                        <Input
+                          id="pxSettlementFigure"
+                          type="number"
+                          min={0}
+                          className="pl-7"
+                          error={!!errors.pxSettlementFigure}
+                          {...register("pxSettlementFigure")}
+                        />
+                      </div>
+                    </FormField>
+
+                    <FormField
+                      label="Settlement quote date"
+                      htmlFor="pxSettlementQuoteDate"
+                      error={errors.pxSettlementQuoteDate?.message}
+                      hint="If >30 days old, request a fresh quote"
+                      required
+                    >
+                      <Input
+                        id="pxSettlementQuoteDate"
+                        type="date"
+                        error={!!errors.pxSettlementQuoteDate}
+                        {...register("pxSettlementQuoteDate")}
+                      />
+                    </FormField>
+                  </div>
                 )}
 
                 <FormField
@@ -801,134 +1226,6 @@ export function DealCreationScreen() {
                   </div>
                 </FormField>
 
-                <FormField
-                  label="Existing Finance"
-                  error={errors.pxExistingFinance?.message}
-                  required
-                >
-                  <Controller
-                    name="pxExistingFinance"
-                    control={control}
-                    render={({ field }) => (
-                      <RadioGroup
-                        value={field.value}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          if (value === "no") {
-                            setValue("pxFinanceCompany", undefined);
-                            setValue("pxOutstandingFinance", undefined);
-                            setValue("pxSettlementFigure", undefined);
-                            setValue("pxFinanceEndDate", undefined);
-                          }
-                        }}
-                        className="flex gap-6"
-                      >
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value="yes" id="existing-finance-yes" />
-                          <Label htmlFor="existing-finance-yes" className="font-normal">
-                            Yes
-                          </Label>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value="no" id="existing-finance-no" />
-                          <Label htmlFor="existing-finance-no" className="font-normal">
-                            No
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    )}
-                  />
-                </FormField>
-
-                {pxExistingFinance === "yes" && (
-                  <div className="space-y-6 border-t border-border pt-6">
-                    <FormField
-                      label="Finance Company"
-                      error={errors.pxFinanceCompany?.message}
-                      required
-                    >
-                      <Controller
-                        name="pxFinanceCompany"
-                        control={control}
-                        render={({ field }) => (
-                          <Select value={field.value} onValueChange={field.onChange}>
-                            <SelectTrigger
-                              id="pxFinanceCompany"
-                              className={cn(
-                                errors.pxFinanceCompany && "border-danger",
-                              )}
-                            >
-                              <SelectValue placeholder="Select Company" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {pxFinanceCompanies.map((company) => (
-                                <SelectItem key={company.value} value={company.value}>
-                                  {company.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </FormField>
-
-                    <FormField
-                      label="Outstanding Finance"
-                      htmlFor="pxOutstandingFinance"
-                      error={errors.pxOutstandingFinance?.message}
-                      required
-                    >
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                          £
-                        </span>
-                        <Input
-                          id="pxOutstandingFinance"
-                          type="number"
-                          min={0}
-                          className="pl-7"
-                          error={!!errors.pxOutstandingFinance}
-                          {...register("pxOutstandingFinance")}
-                        />
-                      </div>
-                    </FormField>
-
-                    <FormField
-                      label="Settlement Figure"
-                      htmlFor="pxSettlementFigure"
-                      error={errors.pxSettlementFigure?.message}
-                      required
-                    >
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                          £
-                        </span>
-                        <Input
-                          id="pxSettlementFigure"
-                          type="number"
-                          min={0}
-                          className="pl-7"
-                          error={!!errors.pxSettlementFigure}
-                          {...register("pxSettlementFigure")}
-                        />
-                      </div>
-                    </FormField>
-
-                    <FormField
-                      label="Finance End Date"
-                      htmlFor="pxFinanceEndDate"
-                      error={errors.pxFinanceEndDate?.message}
-                      hint="Optional"
-                    >
-                      <Input
-                        id="pxFinanceEndDate"
-                        type="date"
-                        {...register("pxFinanceEndDate")}
-                      />
-                    </FormField>
-                  </div>
-                )}
-
                 {(pxValuation !== undefined ||
                   (pxExistingFinance === "yes" && pxSettlementFigure !== undefined)) && (
                   <div className="rounded-[16px] bg-background/60 p-4">
@@ -949,7 +1246,7 @@ export function DealCreationScreen() {
                       <span
                         className={cn(
                           "font-semibold",
-                          equity >= 0 ? "text-success" : "text-danger"
+                          equity >= 0 ? "text-success" : "text-danger",
                         )}
                       >
                         {formatGbp(equity)} Equity
@@ -1037,71 +1334,10 @@ export function DealCreationScreen() {
                 )}
               />
             </FormField>
-          </CardContent>
-        </Card>
-
-        {/* Section 5 — Customer Budget */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Budget Information</CardTitle>
-            <CardDescription>
-              Critical for HP and PCP finance negotiation
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                label="Maximum Deposit"
-                htmlFor="maximumDeposit"
-                error={errors.maximumDeposit?.message}
-                hint="Customer's upper limit for upfront payment"
-              >
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
-                    £
-                  </span>
-                  <Input
-                    id="maximumDeposit"
-                    type="number"
-                    min={0}
-                    placeholder="500"
-                    className="h-12 pl-7 text-lg font-semibold"
-                    error={!!errors.maximumDeposit}
-                    {...register("maximumDeposit")}
-                  />
-                </div>
-              </FormField>
-
-              <FormField
-                label="Maximum Monthly Budget"
-                htmlFor="customerBudget"
-                error={errors.customerBudget?.message}
-                hint="Target monthly payment ceiling"
-              >
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
-                    £
-                  </span>
-                  <Input
-                    id="customerBudget"
-                    type="number"
-                    min={0}
-                    placeholder="350"
-                    className="h-12 pl-7 text-lg font-semibold"
-                    error={!!errors.customerBudget}
-                    {...register("customerBudget")}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    /month
-                  </span>
-                </div>
-              </FormField>
-            </div>
-
             <FormField
               label="Notes"
               htmlFor="notes"
-              hint="Preferences, objections, or negotiation context"
+              hint="Preferences, objections, or context for later"
             >
               <Textarea
                 id="notes"

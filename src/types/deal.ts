@@ -49,13 +49,28 @@ export type PartExchangeRecord = {
   model: string;
   year: number;
   mileage: number;
+  colour?: string;
+  fuel?: string;
+  motExpires?: string;
   valuation: number;
   existingFinance: boolean;
-  outstandingFinance: number;
+  monthlyPayment: number;
   settlementFigure: number;
-  financeCompany?: string;
-  financeEndDate?: string;
+  lender?: string;
+  agreementNumber?: string;
+  settlementQuoteDate?: string;
   equity: number;
+  serviceHistoryType?: "fsh" | "psh" | "none";
+  servicedWhere?: "main-dealer" | "independent" | "mixed";
+  v5InSellersName?: "yes" | "no";
+  keyCount?: "1" | "2" | "3plus";
+  insuranceWriteOff?: "yes" | "no";
+  accidentHistory?: "yes" | "no";
+  accidentDescription?: string;
+  valueDrivers?: string[];
+  featuresNotes?: string;
+  conditionNotes?: string;
+  photoDataUrls?: string[];
 };
 
 export type DealRecord = {
@@ -76,8 +91,6 @@ export type DealRecord = {
   branch: Branch;
   dealSource: DealSource;
   purchaseTimeline: PurchaseTimeline;
-  maximumDeposit?: number;
-  customerBudget?: number;
   notes?: string;
   processChecklist?: ProcessChecklist;
   testDriveNotes?: TestDriveNotes;

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   BarChart3,
-  Handshake,
   Plus,
   Users,
   type LucideIcon,
@@ -29,12 +28,6 @@ const actions: ActionItem[] = [
     description: "Create a new finance deal",
     href: routes.deals.new.index,
     icon: Plus,
-  },
-  {
-    title: "View Deals",
-    description: "Browse deal history",
-    href: routes.deals.index,
-    icon: Handshake,
   },
   {
     title: "Customers",

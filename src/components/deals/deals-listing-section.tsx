@@ -15,8 +15,6 @@ import {
   filterDealHistory,
   hasActiveDealHistoryFilters,
 } from "@/lib/filterDealHistory";
-import { PageContainer } from "@/components/layouts/page-container";
-import { PageHeader } from "@/components/layouts/page-header";
 import {
   DealHistoryFilters,
   DealHistorySearch,
@@ -106,7 +104,11 @@ const columns: TableColumn<RecentDeal>[] = [
   },
 ];
 
-export function DealHistoryScreen() {
+type DealsListingSectionProps = {
+  pageSize?: number;
+};
+
+export function DealsListingSection({ pageSize = 10 }: DealsListingSectionProps) {
   const [filters, setFilters] = useState(defaultDealHistoryFilters);
 
   const salespeople = useMemo(
@@ -121,65 +123,53 @@ export function DealHistoryScreen() {
   );
 
   return (
-    <PageContainer className="space-y-6 py-6 sm:space-y-8">
-      <PageHeader
-        title="Deal History"
-        description="View and manage all dealership deals"
-        actions={
-          <Button asChild>
-            <Link href={routes.deals.new.index}>Create Deal</Link>
-          </Button>
-        }
-      />
+    <Card>
+      <CardHeader>
+        <CardTitle>All Deals</CardTitle>
+        <CardDescription>
+          Showing {filteredDeals.length} of {dealHistoryRecords.length} deals
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex flex-wrap items-end gap-3">
+          <DealHistorySearch
+            filters={filters}
+            onFiltersChange={setFilters}
+            inline
+          />
+          <DealHistoryFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            salespeople={salespeople}
+            inline
+          />
+          {hasActiveDealHistoryFilters(filters) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mb-0.5 shrink-0"
+              onClick={() => setFilters(defaultDealHistoryFilters)}
+            >
+              <X className="size-4" />
+              Clear filters
+            </Button>
+          )}
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Deals</CardTitle>
-          <CardDescription>
-            Showing {filteredDeals.length} of {dealHistoryRecords.length} deals
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-wrap items-end gap-3">
-            <DealHistorySearch
-              filters={filters}
-              onFiltersChange={setFilters}
-              inline
-            />
-            <DealHistoryFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              salespeople={salespeople}
-              inline
-            />
-            {hasActiveDealHistoryFilters(filters) && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="mb-0.5 shrink-0"
-                onClick={() => setFilters(defaultDealHistoryFilters)}
-              >
-                <X className="size-4" />
-                Clear filters
-              </Button>
-            )}
-          </div>
+        <Separator />
 
-          <Separator />
-
-          <div className="overflow-x-auto">
-            <DataTable
-              data={filteredDeals}
-              columns={columns}
-              keyField="id"
-              emptyMessage="No deals match your filters"
-              paginated
-              pageSize={5}
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </PageContainer>
+        <div className="overflow-x-auto">
+          <DataTable
+            data={filteredDeals}
+            columns={columns}
+            keyField="id"
+            emptyMessage="No deals match your filters"
+            paginated
+            pageSize={pageSize}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

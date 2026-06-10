@@ -17,7 +17,6 @@ type DealBuilderVehiclePanelProps = {
   colour: string;
   retailPrice: number;
   partExchangeValue: number | null;
-  customerBudget: number | null;
   showInternalMargin?: boolean;
   vehicleMargin?: number;
 };
@@ -32,7 +31,6 @@ export function DealBuilderVehiclePanel({
   colour,
   retailPrice,
   partExchangeValue,
-  customerBudget,
   showInternalMargin = false,
   vehicleMargin,
 }: DealBuilderVehiclePanelProps) {
@@ -88,12 +86,6 @@ export function DealBuilderVehiclePanel({
               <span className="text-caption">Part Exchange Value</span>
               <span className="text-sm font-medium">
                 {partExchangeValue != null ? formatGbp(partExchangeValue) : "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-caption">Customer Budget</span>
-              <span className="text-sm font-medium">
-                {customerBudget != null ? `${formatGbp(customerBudget)}/mo` : "—"}
               </span>
             </div>
           </div>

@@ -3,6 +3,9 @@ export type ProcessChecklistKey =
   | "teaCoffeeOffered"
   | "customerSeated"
   | "drivingLicenceReceived"
+  | "drivingLicencePhotographed"
+  | "insuranceConfirmed"
+  | "routeBriefed"
   | "pxKeysReceived"
   | "salesManagerIntroductionCompleted";
 

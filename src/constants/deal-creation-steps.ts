@@ -8,14 +8,14 @@ export type DealCreationStep = {
 export const dealCreationSteps: DealCreationStep[] = [
   {
     step: 1,
-    title: "Customer & vehicle",
-    subtitle: "Share the customer and vehicle details for this deal",
+    title: "Arrival & intake",
+    subtitle: "Capture customer, part exchange, and vehicle — no budget yet",
     path: "/deals/new",
   },
   {
     step: 2,
-    title: "Process checklist",
-    subtitle: "Complete the on-site checklist before the test drive",
+    title: "Pre-test-drive checklist",
+    subtitle: "Complete compliance items before the test drive",
     path: "/deals/new/step-2",
   },
   {

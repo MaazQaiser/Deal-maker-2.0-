@@ -1,6 +1,6 @@
 "use client";
 
-import { Car, TrendingDown } from "lucide-react";
+import { Car, Sparkles, TrendingDown } from "lucide-react";
 import { financeProducts } from "@/constants/finance-products";
 import { formatGbp } from "@/lib/formatGbp";
 import {
@@ -31,13 +31,106 @@ type FinanceComparisonPanelProps = {
   apr: number;
   financeContext: DealFinanceContext;
   summary: ReturnType<typeof getFinanceSummary>;
-  suggestedOption?: FinanceOption;
+  recommended?: FinanceOption | null;
+  matches?: FinanceOption[];
   onSelectHpVariant: (variant: "a" | "b") => void;
   showZeroCard?: boolean;
-  showSuggestedBadges?: boolean;
   showOptionCtas?: boolean;
   heading?: string;
+  layout?: "stack" | "row";
 };
+
+const OPTION_ICONS: Record<FinanceOption, typeof Sparkles> = {
+  zero: Sparkles,
+  hp: Car,
+  pcp: TrendingDown,
+};
+
+function FinanceFitOptionCard({
+  option,
+  deposit,
+  monthly,
+  eligible,
+  outcome,
+  headline,
+  selected,
+  recommended,
+  matchesBudget,
+  onSelect,
+  showCta,
+}: {
+  option: FinanceOption;
+  deposit: number;
+  monthly: number;
+  eligible: boolean;
+  outcome: string;
+  headline: string;
+  selected: boolean;
+  recommended: boolean;
+  matchesBudget: boolean;
+  onSelect: () => void;
+  showCta: boolean;
+}) {
+  const Icon = OPTION_ICONS[option];
+
+  return (
+    <Card
+      className={cn(
+        "flex h-full flex-col transition-shadow",
+        selected && eligible && "border-primary ring-1 ring-primary/20",
+        !eligible && "opacity-60",
+        recommended && "shadow-md",
+      )}
+    >
+      <CardHeader className="space-y-2 pb-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="neutral">{outcome}</Badge>
+          {recommended ? (
+            <Badge variant="info">Recommended</Badge>
+          ) : null}
+          {eligible && matchesBudget && !recommended ? (
+            <Badge variant="success">Matches your budget</Badge>
+          ) : null}
+          {eligible && !matchesBudget ? (
+            <Badge variant="warning">Above budget</Badge>
+          ) : null}
+        </div>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Icon className="size-4 text-primary" aria-hidden />
+          {headline}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="mt-auto space-y-4">
+        <div className="space-y-3">
+          <div>
+            <p className="text-caption text-muted-foreground">Deposit</p>
+            <p className="text-heading-4">{formatGbp(deposit)}</p>
+          </div>
+          <div>
+            <p className="text-caption text-muted-foreground">Monthly</p>
+            <p className="text-display-s font-semibold">
+              {formatGbp(monthly)}
+              <span className="text-base font-normal text-muted-foreground">
+                /mo
+              </span>
+            </p>
+          </div>
+        </div>
+        {showCta ? (
+          <Button
+            type="button"
+            variant={selected ? "primary" : "outline"}
+            className="w-full"
+            disabled={!eligible}
+            onClick={onSelect}
+          >
+            {financeProducts[option].cta}
+          </Button>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
 
 export function FinanceComparisonPanel({
   effectiveSelected,
@@ -49,15 +142,60 @@ export function FinanceComparisonPanel({
   apr,
   financeContext,
   summary,
-  suggestedOption,
+  recommended,
+  matches = [],
   onSelectHpVariant,
   showZeroCard = true,
-  showSuggestedBadges = true,
   showOptionCtas = true,
   heading = "Finance Comparison",
+  layout = "stack",
 }: FinanceComparisonPanelProps) {
   const hpProduct = financeProducts.hp;
   const pcpProduct = financeProducts.pcp;
+
+  if (layout === "row") {
+    const options: {
+      id: FinanceOption;
+      monthly: number;
+      eligible: boolean;
+    }[] = [
+      {
+        id: "zero",
+        monthly: summary.zeroMonthly,
+        eligible: summary.zeroEligible,
+      },
+      { id: "hp", monthly: summary.hpMonthly, eligible: true },
+      { id: "pcp", monthly: summary.pcpMonthly, eligible: true },
+    ];
+
+    return (
+      <div className="space-y-4">
+        {heading ? <h2 className="text-heading-4">{heading}</h2> : null}
+        <div className="grid gap-4 md:grid-cols-3">
+          {options.map((option) => {
+            if (option.id === "zero" && !showZeroCard) return null;
+            const product = financeProducts[option.id];
+            return (
+              <FinanceFitOptionCard
+                key={option.id}
+                option={option.id}
+                deposit={deposit}
+                monthly={option.monthly}
+                eligible={option.eligible}
+                outcome={product.outcome}
+                headline={product.headline}
+                selected={effectiveSelected === option.id}
+                recommended={recommended === option.id}
+                matchesBudget={matches.includes(option.id)}
+                onSelect={() => onSelectFinance(option.id)}
+                showCta={showOptionCtas}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -68,7 +206,7 @@ export function FinanceComparisonPanel({
           deposit={deposit}
           financeContext={financeContext}
           summary={summary}
-          suggestedOption={showSuggestedBadges ? suggestedOption : undefined}
+          suggestedOption={recommended === "zero" ? "zero" : undefined}
           selected={effectiveSelected === "zero"}
           onSelectFinance={onSelectFinance}
           showCta={showOptionCtas}
@@ -83,8 +221,8 @@ export function FinanceComparisonPanel({
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="neutral">{hpProduct.outcome}</Badge>
-            {showSuggestedBadges && suggestedOption === "hp" && (
-              <Badge variant="info">Suggested for this customer</Badge>
+            {recommended === "hp" && (
+              <Badge variant="info">Recommended</Badge>
             )}
           </div>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -165,8 +303,8 @@ export function FinanceComparisonPanel({
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="neutral">{pcpProduct.outcome}</Badge>
-            {showSuggestedBadges && suggestedOption === "pcp" && (
-              <Badge variant="info">Suggested for this customer</Badge>
+            {recommended === "pcp" && (
+              <Badge variant="info">Recommended</Badge>
             )}
           </div>
           <CardTitle className="flex items-center gap-2 text-base">

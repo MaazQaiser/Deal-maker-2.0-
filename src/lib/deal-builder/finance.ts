@@ -29,6 +29,17 @@ export const PCP_TERMS = [18, 24, 36, 48, 60] as const;
 export const ZERO_TERM = 18;
 export const DEFAULT_HP_APR = 14.9;
 export const DEPOSIT_MAX = 15000;
+export const FINANCE_FIT_DEPOSIT_MIN = 500;
+export const FINANCE_FIT_DEPOSIT_MAX = 10000;
+export const FINANCE_FIT_MONTHLY_MIN = 150;
+export const FINANCE_FIT_MONTHLY_MAX = 1200;
+
+export type FinanceFitResult = {
+  matches: FinanceOption[];
+  recommended: FinanceOption | null;
+  allAboveBudget: boolean;
+  cheapestMonthly: number;
+};
 
 export type DealHealthStatus = "healthy" | "low" | "review";
 
@@ -79,9 +90,10 @@ export function calculateHPMonthly(
   retailPrice: number,
   pxEquity: number,
   aprPercent: number = DEFAULT_HP_APR,
+  productValue: number = 0,
 ): number {
   const totalDeposit = deposit + pxEquity + extraDeposit;
-  const principal = retailPrice - totalDeposit;
+  const principal = retailPrice + productValue - totalDeposit;
   if (principal <= 0) return 0;
   const monthlyRate = aprPercent / 100 / 12;
   const payment =
@@ -96,8 +108,9 @@ export function calculatePCPMonthly(
   balloon: number,
   retailPrice: number,
   pxEquity: number,
+  productValue: number = 0,
 ): number {
-  const principal = retailPrice - deposit - pxEquity - balloon;
+  const principal = retailPrice + productValue - deposit - pxEquity - balloon;
   if (principal <= 0) return 0;
   const monthlyRate = 0.089 / 12;
   const payment =
@@ -152,6 +165,7 @@ export function getFinanceSummary(
     context.retailPrice,
     context.pxEquity,
     apr,
+    productValue,
   );
   const pcpMonthly = calculatePCPMonthly(
     deposit,
@@ -159,6 +173,7 @@ export function getFinanceSummary(
     balloon,
     context.retailPrice,
     context.pxEquity,
+    productValue,
   );
   const pcpTotal =
     pcpMonthly * term + balloon + deposit + context.pxEquity;
@@ -172,5 +187,48 @@ export function getFinanceSummary(
     balloon,
     zeroDepositRequired: zeroPercentMinDeposit,
     productValue,
+  };
+}
+
+const FINANCE_FIT_PRIORITY: FinanceOption[] = ["zero", "hp", "pcp"];
+
+export function getFinanceFit(params: {
+  summary: ReturnType<typeof getFinanceSummary>;
+  comfortableMonthly: number;
+}): FinanceFitResult {
+  const { summary, comfortableMonthly } = params;
+
+  const candidates: { id: FinanceOption; monthly: number; eligible: boolean }[] =
+    [
+      {
+        id: "zero",
+        monthly: summary.zeroMonthly,
+        eligible: summary.zeroEligible,
+      },
+      { id: "hp", monthly: summary.hpMonthly, eligible: true },
+      { id: "pcp", monthly: summary.pcpMonthly, eligible: true },
+    ];
+
+  const matches = candidates
+    .filter((option) => option.eligible && option.monthly <= comfortableMonthly)
+    .map((option) => option.id);
+
+  const recommended =
+    FINANCE_FIT_PRIORITY.find((id) => matches.includes(id)) ?? null;
+
+  const eligibleMonthlies = candidates
+    .filter((option) => option.eligible)
+    .map((option) => option.monthly);
+
+  const cheapestMonthly =
+    eligibleMonthlies.length > 0
+      ? Math.min(...eligibleMonthlies)
+      : Math.min(summary.hpMonthly, summary.pcpMonthly);
+
+  return {
+    matches,
+    recommended,
+    allAboveBudget: matches.length === 0,
+    cheapestMonthly,
   };
 }

@@ -21,6 +21,7 @@ import { emptyTestDriveNotes } from "@/types/test-drive";
 import { PageContainer } from "@/components/layouts/page-container";
 import { PageHeader } from "@/components/layouts/page-header";
 import { DealCreationStepper } from "@/components/deals/deal-creation-stepper";
+import { SceneSetterCard } from "@/components/deals/scene-setter-card";
 import { VehicleSummaryCard } from "@/components/deals/vehicle-summary-card";
 import {
   Card,
@@ -82,6 +83,7 @@ export function TestDriveNotesScreen() {
   return (
     <PageContainer size="md" className="space-y-6 py-6 sm:space-y-8">
       <PageHeader
+        sticky
         title="Test Drive Notes"
         titleClassName="text-page-title"
         description={stepMeta.subtitle}
@@ -98,11 +100,12 @@ export function TestDriveNotesScreen() {
         }
       />
 
+      <SceneSetterCard scene="test-drive" />
       <VehicleSummaryCard />
 
       <Card>
         <CardHeader>
-          <CardTitle>Buying motives</CardTitle>
+          <CardTitle>Why are they changing?</CardTitle>
           <CardDescription>Why is the customer changing vehicle?</CardDescription>
         </CardHeader>
         <CardContent>
@@ -187,7 +190,7 @@ export function TestDriveNotesScreen() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Important features</CardTitle>
+          <CardTitle>What matters most?</CardTitle>
           <CardDescription>What matters most to the customer?</CardDescription>
         </CardHeader>
         <CardContent>

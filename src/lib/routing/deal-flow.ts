@@ -35,8 +35,7 @@ export function getWizardProgress(pathname: string): {
   return {
     currentStep,
     stepIndex: stepIndex >= 0 ? stepIndex + 1 : 0,
-    totalSteps: wizardOnly.filter((s) => s.id !== "finance-option-detail")
-      .length,
+    totalSteps: wizardOnly.length,
   };
 }
 

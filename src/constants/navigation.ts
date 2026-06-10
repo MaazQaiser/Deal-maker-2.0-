@@ -1,7 +1,6 @@
 import {
   BarChart3,
   CreditCard,
-  Handshake,
   Home,
   Layers,
   Package,
@@ -26,12 +25,6 @@ export const mainNavItems: NavItem[] = [
     title: "Deal Builder",
     href: routes.dealBuilder.index,
     icon: Layers,
-  },
-  {
-    title: "Deals",
-    href: routes.deals.index,
-    icon: Handshake,
-    badge: "12",
   },
   {
     title: "Customers",
@@ -81,16 +74,10 @@ export const allNavItems: NavItem[] = [
 export const routeLabels: Record<string, string> = {
   [routes.dashboard]: "Dashboard",
 
-  [routes.deals.index]: "Deals",
-  [routes.deals.new.index]: "New Deal",
-  [routes.deals.new.step2]: "Step 2",
-  [routes.deals.new.vehicleLookup]: "Vehicle Lookup",
-  [routes.deals.new.vehicleFound]: "Vehicle Found",
-  [routes.deals.new.partExchange]: "Part Exchange",
-  [routes.deals.new.products]: "Products",
-  [routes.deals.new.financeOptions]: "Finance Options",
-  [routes.deals.new.selectFinance]: "Select Finance",
-  [routes.deals.new.review]: "Review Deal",
+  [routes.deals.new.index]: "Arrival & intake",
+  [routes.deals.new.step2]: "Pre-test-drive checklist",
+  [routes.deals.new.step3]: "Test drive notes",
+  [routes.deals.new.step4]: "Trial close",
 
   [routes.dealBuilder.index]: "Deal Builder",
   [routes.dealBuilder.new]: "New",
@@ -104,24 +91,19 @@ export const routeLabels: Record<string, string> = {
 
 /** Segment-level label overrides */
 export const segmentLabels: Record<string, string> = {
-  new: "New Deal",
-  "step-2": "Step 2",
-  "vehicle-lookup": "Vehicle Lookup",
-  "vehicle-found": "Vehicle Found",
-  "part-exchange": "Part Exchange",
-  products: "Products",
-  "finance-options": "Finance Options",
-  "select-finance": "Select Finance",
-  review: "Review Deal",
-  proposal: "Print Proposal",
-  "0": "0% Finance",
-  hp: "HP",
-  pcp: "PCP",
+  new: "New deal",
+  "step-2": "Checklist",
+  "step-3": "Test drive",
+  "step-4": "Trial close",
+  presentation: "0% presentation",
+  "finance-fit": "Finance fit",
+  complete: "Summary & signature",
+  proposal: "Print proposal",
 };
 
 /** Dynamic segment labels keyed by parent path */
 export const dynamicBreadcrumbLabels: Record<string, string> = {
-  [routes.dealBuilder.index]: "Builder Details",
-  [routes.deals.index]: "Deal Details",
-  [routes.customers.index]: "Customer Details",
+  [routes.dealBuilder.index]: "Deal builder",
+  [routes.dashboard]: "Deal details",
+  [routes.customers.index]: "Customer details",
 };

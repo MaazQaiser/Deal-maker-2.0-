@@ -141,9 +141,9 @@ export function DealDetailScreen({ dealId }: DealDetailScreenProps) {
           No deal exists with ID {dealId}.
         </p>
         <Button type="button" className="mt-6" asChild>
-          <Link href={routes.deals.index}>
+          <Link href={routes.dashboard}>
             <ArrowLeft className="size-4" />
-            Back to Deal History
+            Back to Dashboard
           </Link>
         </Button>
       </PageContainer>
@@ -173,13 +173,13 @@ export function DealDetailScreen({ dealId }: DealDetailScreenProps) {
               {dealStatusLabel[deal.status]}
             </Badge>
             <Button type="button" variant="outline" size="sm" asChild>
-              <Link href={routes.deals.index}>
+              <Link href={routes.dashboard}>
                 <ArrowLeft className="size-4" />
-                Deals
+                Dashboard
               </Link>
             </Button>
             <Button type="button" variant="outline" size="sm" asChild>
-              <Link href={routes.dealBuilder.detail(dealId)}>
+              <Link href={routes.dealBuilder.presentation(dealId)}>
                 <Wrench className="size-4" />
                 Open in Deal Builder
               </Link>
@@ -239,8 +239,6 @@ export function DealDetailScreen({ dealId }: DealDetailScreenProps) {
             )}
             mobile={deal.customer.mobile}
             email={deal.customer.email}
-            maximumDeposit={deal.maximumDeposit}
-            customerBudget={deal.customerBudget}
             testDriveNotes={deal.testDriveNotes}
             notes={notes}
             readOnly
@@ -256,7 +254,6 @@ export function DealDetailScreen({ dealId }: DealDetailScreenProps) {
             colour={deal.vehicle.colour}
             retailPrice={deal.vehicle.retailPrice}
             partExchangeValue={deal.partExchange?.valuation ?? null}
-            customerBudget={deal.customerBudget ?? null}
           />
 
           {deal.partExchange && financePlan ? (

@@ -18,14 +18,12 @@ export function getSalesManagerNotes(
     notes.push("Settlement Confirmed");
   }
 
-  const totalDepositContribution =
-    (draft.maximumDeposit ?? 0) +
-    (draft.hasPartExchange
-      ? Math.max(
-          0,
-          (draft.pxValuation ?? 0) - (draft.pxSettlementFigure ?? 0),
-        )
-      : 0);
+  const totalDepositContribution = draft.hasPartExchange
+    ? Math.max(
+        0,
+        (draft.pxValuation ?? 0) - (draft.pxSettlementFigure ?? 0),
+      )
+    : 0;
 
   if (totalDepositContribution >= 7824) {
     notes.push("0% Finance Available");
