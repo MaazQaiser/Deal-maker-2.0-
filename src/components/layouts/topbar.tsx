@@ -1,9 +1,8 @@
 "use client";
 
-import { mockNotifications, mockUser } from "@/constants/mock-data";
+import { mockUser } from "@/constants/mock-data";
 import { cn } from "@/lib/cn";
 import { AppLogo } from "@/components/brand/app-logo";
-import { NotificationPanel } from "@/components/navigation/notification-panel";
 import { UserMenu } from "@/components/navigation/user-menu";
 
 type TopbarProps = {
@@ -23,7 +22,6 @@ export function Topbar({ className }: TopbarProps) {
       </div>
 
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
-        <NotificationPanel notifications={mockNotifications} />
         <UserMenu user={mockUser} />
       </div>
     </header>

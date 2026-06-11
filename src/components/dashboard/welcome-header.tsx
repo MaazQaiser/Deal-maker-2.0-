@@ -1,11 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { dashboardUser } from "@/constants/dashboard-mock-data";
-import { routes } from "@/constants/routes";
 import { formatTodayHeading } from "@/lib/formatDate";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
 function getGreeting(): string {
@@ -24,25 +20,11 @@ export function WelcomeHeader({ className }: WelcomeHeaderProps) {
   const today = formatTodayHeading(new Date());
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
-        className
-      )}
-    >
-      <div className="space-y-1">
-        <h1 className="text-heading-1">
-          {greeting}, {dashboardUser.firstName}
-        </h1>
-        <p className="text-body text-muted-foreground">{today}</p>
-      </div>
-
-      <Button asChild size="sm" className="w-full sm:w-auto">
-        <Link href={routes.deals.new.index}>
-          <Plus className="size-4" aria-hidden="true" />
-          Start New Deal
-        </Link>
-      </Button>
+    <div className={cn("space-y-1", className)}>
+      <h1 className="text-heading-1">
+        {greeting}, {dashboardUser.firstName}
+      </h1>
+      <p className="text-body text-muted-foreground">{today}</p>
     </div>
   );
 }
